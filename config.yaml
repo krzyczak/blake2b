@@ -6,6 +6,10 @@ password: "x"
 # 0 means one worker per logical CPU.
 threads: 0
 
+# cpu, gpu, or both.
+device: both
+gpu_batch_size: 1048576
+
 # Defaults for raw Blake2b jobs. A job may override these fields.
 nonce_offset: 32
 nonce_size: 8
@@ -14,4 +18,3 @@ hash_byte_order: little
 
 reconnect_delay_seconds: 5
 stats_interval_seconds: 5
-
