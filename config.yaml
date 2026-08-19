@@ -1,0 +1,17 @@
+# Credentials can be embedded as stratum+tcp://worker:password@pool:port.
+stratum_url: "stratum+tcp://sc.f2pool.com:7788"
+username: "51529827ad2ca152d7e3a718ec83a3f9cc02829272dd3fd9fa1324b66e8bdb71e5c0862225dd.0x1"
+password: "x"
+
+# 0 means one worker per logical CPU.
+threads: 0
+
+# Defaults for raw Blake2b jobs. A job may override these fields.
+nonce_offset: 32
+nonce_size: 8
+nonce_endian: little
+hash_byte_order: little
+
+reconnect_delay_seconds: 5
+stats_interval_seconds: 5
+
