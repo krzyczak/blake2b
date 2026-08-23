@@ -1,7 +1,8 @@
 diff --git a/src/datum_api.c b/src/datum_api.c
 --- a/src/datum_api.c
 +++ b/src/datum_api.c
-@@ -472,7 +472,4 @@ static enum MHD_DigestAuthAlgorithm datum_api_pick_digest_algo(struct MHD_Conne
+@@ -471,11 +471,0 @@
+-static enum MHD_DigestAuthAlgorithm datum_api_pick_digest_algo(struct MHD_Connection * const connection) {
 -	const char *ua = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "User-Agent");
 -	if (!ua) ua = "";
 -	if (datum_config.api_allow_insecure_auth) {
@@ -9,19 +10,55 @@ diff --git a/src/datum_api.c b/src/datum_api.c
 -			return MHD_DIGEST_ALG_MD5;
 -		}
 -	}
-+	(void)connection;
-+	if (datum_config.api_allow_insecure_auth) {
-+		return MHD_DIGEST_ALG_MD5;
-+	}
-@@ -484 +481 @@ bool datum_api_check_admin_password_httponly(struct MHD_Connection * const conne
+-	return MHD_DIGEST_ALG_SHA256;
+-}
+-
+@@ -484 +473 @@
 -	static bool safari_warned = false;
-+	static bool insecure_digest_warned = false;
-@@ -495,4 +492,4 @@ bool datum_api_check_admin_password_httponly(struct MHD_Connection * const conne
++	static bool basic_auth_warned = false;
+@@ -486,23 +475,22 @@
+-	char * const username = MHD_digest_auth_get_username(connection);
+-	const enum MHD_DigestAuthAlgorithm algo = datum_api_pick_digest_algo(connection);
+-	const char * const realm = "DATUM Gateway";
+-	if (username) {
+-		ret = MHD_digest_auth_check2(connection, realm, username, datum_config.api_admin_password, 300, algo);
+-		free(username);
+-	} else {
+-		ret = MHD_NO;
+-	}
 -	if (algo == MHD_DIGEST_ALG_MD5 && (ret == MHD_NO || !safari_warned)) {
 -		DLOG_WARN("Detected login request from Apple Safari. For some reason, this browser only supports obsolete and insecure MD5 digest authentication. Login at your own risk!");
 -		safari_warned = true;
 -	}
-+	if (algo == MHD_DIGEST_ALG_MD5 && !insecure_digest_warned) {
-+		DLOG_WARN("Dashboard compatibility mode uses legacy MD5 digest authentication. Use only through a trusted encrypted interface.");
-+		insecure_digest_warned = true;
+-	if (ret != MHD_YES) {
+-		const bool nonce_is_stale = (ret == MHD_INVALID_NONCE);
+-		if (username && !nonce_is_stale) {
+-			DLOG_DEBUG("Wrong password in HTTP authentication");
+-		}
+-		struct MHD_Response * const response = auth_failure_response_creator();
+-		ret = MHD_queue_auth_fail_response2(connection, realm, "x", response, nonce_is_stale ? MHD_YES : MHD_NO, algo);
+-		MHD_destroy_response(response);
+-		return false;
+-	}
++	const char * const realm = "DATUM Gateway";
++	char *password = NULL;
++	char * const username = MHD_basic_auth_get_username_password(connection, &password);
++	const bool valid = username && password && !strcmp(username, "admin") &&
++		datum_config.api_admin_password_len &&
++		datum_secure_strequals(datum_config.api_admin_password, datum_config.api_admin_password_len, password);
++
++	if (!basic_auth_warned) {
++		DLOG_WARN("Dashboard compatibility mode uses HTTP Basic authentication. Use only through a trusted encrypted interface.");
++		basic_auth_warned = true;
++	}
++	if (!valid && username) {
++		DLOG_DEBUG("Wrong password in HTTP authentication");
++	}
++	if (username) MHD_free(username);
++	if (password) MHD_free(password);
++	if (!valid) {
++		struct MHD_Response * const response = auth_failure_response_creator();
++		ret = MHD_queue_basic_auth_fail_response(connection, realm, response);
++		MHD_destroy_response(response);
++		return false;
 +	}
