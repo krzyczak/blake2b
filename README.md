@@ -15,6 +15,20 @@ in the hash loop.
 cargo build --release
 ```
 
+Build the macOS Apple-silicon, Linux ARM64, and Linux x86-64 binaries together
+with Zig (no Docker required):
+
+```sh
+./compile --target all
+./compile --target mac
+./compile --target linux-arm
+./compile --target linux-x86
+```
+
+The script installs a missing Rust standard-library target automatically and
+prints the relative path of every resulting executable. Linux cross-builds
+require Zig (`brew install zig`).
+
 ## Configuration
 
 Edit `config.yaml`:

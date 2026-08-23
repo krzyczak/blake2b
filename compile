@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Cargo invokes this file as the Linux linker during Zig cross-compilation.
+if [[ -n "${BLAKE2B_ZIG_TARGET:-}" ]]; then
+    exec zig cc -target "$BLAKE2B_ZIG_TARGET" "$@"
+fi
+
+cd "$(dirname "$0")"
+
+binary="blake2b-apple-miner"
+selected=""
+outputs=()
+
+usage() {
+    cat <<'EOF'
+Usage: ./compile --target <all|mac|linux-arm|linux-x86>
+
+Targets:
+  all         Build every target below
+  mac         Apple silicon macOS (aarch64-apple-darwin)
+  linux-arm   64-bit ARM Linux (aarch64-unknown-linux-gnu)
+  linux-x86   64-bit x86 Linux (x86_64-unknown-linux-gnu)
+EOF
+}
+
+while (($#)); do
+    case "$1" in
+        --target)
+            [[ $# -ge 2 ]] || { echo "error: --target needs a value" >&2; usage >&2; exit 2; }
+            selected="$2"
+            shift 2
+            ;;
+        --target=*)
+            selected="${1#*=}"
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "error: unknown argument: $1" >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
+
+[[ -n "$selected" ]] || { echo "error: --target is required" >&2; usage >&2; exit 2; }
+
+ensure_rust_target() {
+    local target="$1"
+    local installed="false"
+    while IFS= read -r candidate; do
+        if [[ "$candidate" == "$target" ]]; then
+            installed="true"
+            break
+        fi
+    done < <(rustup target list --installed)
+
+    if [[ "$installed" == "false" ]]; then
+        echo "Installing Rust target $target ..." >&2
+        rustup target add "$target"
+    fi
+}
+
+build_mac() {
+    local target="aarch64-apple-darwin"
+    echo "Building macOS Apple silicon ..." >&2
+    ensure_rust_target "$target"
+    cargo build --locked --release --target "$target"
+    outputs+=("target/$target/release/$binary")
+}
+
+build_linux() {
+    local target="$1"
+    local zig_target="$2"
+    local linker_variable="$3"
+
+    command -v zig >/dev/null 2>&1 || {
+        echo "error: Zig is required to cross-compile Linux binaries" >&2
+        echo "Install it with: brew install zig" >&2
+        exit 1
+    }
+    ensure_rust_target "$target"
+    echo "Building $target with Zig ..." >&2
+    env \
+        BLAKE2B_ZIG_TARGET="$zig_target" \
+        ZIG_GLOBAL_CACHE_DIR="$PWD/target/zig-cache" \
+        "$linker_variable=$PWD/compile" \
+        cargo build --locked --release --target "$target"
+    outputs+=("target/$target/release/$binary")
+}
+
+case "$selected" in
+    all)
+        build_mac
+        build_linux \
+            "aarch64-unknown-linux-gnu" \
+            "aarch64-linux-gnu.2.17" \
+            "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER"
+        build_linux \
+            "x86_64-unknown-linux-gnu" \
+            "x86_64-linux-gnu.2.17" \
+            "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER"
+        ;;
+    mac)
+        build_mac
+        ;;
+    linux-arm)
+        build_linux \
+            "aarch64-unknown-linux-gnu" \
+            "aarch64-linux-gnu.2.17" \
+            "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER"
+        ;;
+    linux-x86)
+        build_linux \
+            "x86_64-unknown-linux-gnu" \
+            "x86_64-linux-gnu.2.17" \
+            "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER"
+        ;;
+    *)
+        echo "error: unsupported target: $selected" >&2
+        usage >&2
+        exit 2
+        ;;
+esac
+
+echo
+echo "Build outputs:"
+for output in "${outputs[@]}"; do
+    [[ -f "$output" ]] || { echo "error: expected artifact is missing: $output" >&2; exit 1; }
+    echo "$output"
+done
