@@ -2,8 +2,9 @@
 
 This directory contains three StartOS SDK 2.0 packages:
 
-- `bitcoin-bip110`: an isolated `pow_hf_blake2b` regtest node.
-- `datum-bip110`: the matching `bip110-pow-v2` DATUM gateway.
+- `bitcoin-bip110`: Bitcoin Knots RC2 with selectable dummy, testnet4,
+  signet, and regtest modes.
+- `datum-bip110`: Justin Filip's matching BLAKE2b DATUM gateway.
 - `mempool-guide`: the x86_64 mempool.guide/Retropex explorer, packaged under
   a separate service id so it can coexist with Start9's official Mempool.
 
@@ -14,13 +15,13 @@ three packages pin immutable source commits and verify source tarball hashes.
 They use Start SDK 2.0.9 and target StartOS 0.4.0-beta.10. A server still on
 the 0.3.5 generation must be upgraded before it can sideload these packages.
 
-## No IBD
+## Network modes
 
 The Bitcoin package does not fake synchronization or bypass block validation.
-It has no peers and runs a private regtest chain, so there is no mainnet IBD.
-On first start it uses Bitcoin's own RPC to mine and validate heights 1 through
-19. It stops there because `blake2b@20` is the activation setting. The DATUM
-gateway supplies the height-20 BLAKE2b job to the external miner.
+Its default dummy mode has no peers and uses Bitcoin's own RPC to mine and
+validate heights 1 through 19, stopping before `blake2b@20`. Testnet4 and
+signet perform a real, pruned IBD; ordinary regtest starts at genesis and has
+no canonical public peers. The four modes keep separate chain data.
 
 ## Build remotely with GitHub Actions
 
@@ -28,7 +29,8 @@ The repository workflow `.github/workflows/startos-packages.yml` builds all
 installable artifacts on GitHub-hosted runners, including Mempool Guide for
 x86_64.
 
-- Bitcoin BIP110 for x86_64
+- Bitcoin Knots BIP110 for x86_64 and aarch64
+- DATUM BIP110 Gateway for x86_64 and aarch64
 - Mempool Guide for x86_64
 
 Push this repository to GitHub, open **Actions**, select **Build StartOS
@@ -41,7 +43,8 @@ sideload packages. It does not publish them to a registry.
 ## Install and run
 
 1. Sideload and start the matching `bitcoin-bip110` package.
-2. Wait for its `BIP110 Regtest` health check to turn green at height 19.
+2. Use **Actions → Select Network**, then wait for the node's health check to
+   turn green. Testnet4 and signet must synchronize first.
 3. Sideload and start the matching `datum-bip110` package. StartOS installs the
    declared Bitcoin dependency and wires RPC over its internal bridge.
 4. In DATUM BIP110 Gateway's Interfaces page, copy the BIP110 Stratum address.
@@ -49,7 +52,7 @@ sideload packages. It does not publish them to a registry.
 
    ```sh
    target/release/blake2b-apple-miner \
-     --datum \
+     --sia \
      --device both \
      --startum-url='stratum+tcp://ADDRESS_SHOWN_BY_STARTOS' \
      --username=local.worker \
@@ -59,13 +62,14 @@ sideload packages. It does not publish them to a registry.
 The intentionally misspelled `--startum-url` is supported as an alias; the
 correct `--stratum-url` spelling works too.
 
-## Fixed lab configuration
+## Mining configuration
 
 The packages regenerate these settings at every start:
 
-- Network: regtest only; peer discovery and listening disabled.
-- BLAKE2b activation: height 20.
-- Required headline / primary coinbase tag: `BIP110-LAB`.
+- Network: selected in the Bitcoin package action.
+- Dummy activation: BLAKE2b at height 20 with headline `BIP110-LAB`.
+- Public testnet4: RC2's built-in activation at height 149537 with headline
+  `Totoro` and real peer synchronization.
 - Bitcoin RPC: port 18443, bridge-only on StartOS.
 - Gateway Stratum: raw TCP port 23334 (StartOS may assign another external
   port if it is already occupied).
@@ -73,6 +77,11 @@ The packages regenerate these settings at every start:
 - External DATUM pool: disabled.
 - Payout: disposable testnet/regtest Base58 address with no packaged wallet.
 
-These are deliberately not production or mainnet packages. Both upstream
-branches are experimental and may be force-pushed; update the commit and
-tarball hash together when testing a newer protocol revision.
+The node does not speak Stratum. The companion gateway translates Knots RPC
+and BIP22 templates into Sia-style BLAKE2b Stratum, so use the miner's `--sia`
+mode. `--datum` remains a compatibility mode for Maveth's older precomputed-mid
+lab dialect; it is not used by the current StartOS gateway package.
+
+These are deliberately not mainnet packages. The upstream revisions are
+pinned by immutable commit and verified tarball hash; update both values
+together when testing a newer protocol revision.

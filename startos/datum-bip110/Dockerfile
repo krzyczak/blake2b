@@ -1,7 +1,7 @@
 FROM debian:bookworm-slim AS builder
 
-ARG DATUM_COMMIT=8d41b1338702bc42db23b84759a0efa73aa1487a
-ARG DATUM_TARBALL_SHA256=1f1c015a4db608d47742821a212e5eca0102925105c81ac8815b8d01852118d1
+ARG DATUM_COMMIT=56c31f40c83c3c8315694617082456677799e43a
+ARG DATUM_TARBALL_SHA256=4f917f319137a28c37df7cdd0e12e86faa651d8c1892bbc8f04167d93a6e3128
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /src
 
 RUN curl --fail --location --silent --show-error \
-        "https://github.com/Maveth/datum_gateway/archive/${DATUM_COMMIT}.tar.gz" \
+        "https://github.com/justinfilip/datum_gateway/archive/${DATUM_COMMIT}.tar.gz" \
         --output /tmp/datum.tar.gz \
     && echo "${DATUM_TARBALL_SHA256}  /tmp/datum.tar.gz" | sha256sum --check --strict \
     && tar --extract --gzip --file /tmp/datum.tar.gz --strip-components=1 \

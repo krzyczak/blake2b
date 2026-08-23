@@ -3,11 +3,13 @@ import { long, short } from './i18n'
 
 export const manifest = setupManifest({
   id: 'bitcoin-bip110',
-  title: 'Bitcoin BIP110 Lab',
+  title: 'Bitcoin Knots BIP110',
   license: 'MIT',
-  packageRepo: 'https://github.com/luke-jr/bitcoin/tree/pow_hf_blake2b',
-  upstreamRepo: 'https://github.com/luke-jr/bitcoin/tree/pow_hf_blake2b',
-  marketingUrl: 'https://github.com/bitcoinknots/bitcoin/pull/359',
+  packageRepo: 'https://github.com/krzyczak/blake2b',
+  upstreamRepo:
+    'https://github.com/bitcoinknots/bitcoin/tree/v29.4.1.knots20260508rc2',
+  marketingUrl:
+    'https://github.com/bitcoinknots/bitcoin/tree/v29.4.1.knots20260508rc2',
   donationUrl: null,
   description: { short, long },
   volumes: ['main'],
@@ -16,9 +18,9 @@ export const manifest = setupManifest({
       source: {
         dockerBuild: {
           buildArgs: {
-            BITCOIN_COMMIT: 'dedbfa8dd33e633426120f3608f489bc185aa6ba',
+            BITCOIN_COMMIT: 'c25ad6bcd18fa65cd78f176a52be062411507741',
             BITCOIN_TARBALL_SHA256:
-              'f65b9b0cd2b3b57a8ccd18633472bc7dd63031ac1011df8f5263d39434e638fb',
+              '4b7ac71af9e8989bc8882d44edcd51fa1bf200d375a5996109d72fe74dc8ecfe',
           },
         },
       },

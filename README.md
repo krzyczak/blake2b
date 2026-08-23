@@ -61,8 +61,20 @@ Normal mode hashes a raw Blake2b-256 blob with the nonce layout from YAML:
 target/release/blake2b-apple-miner --normal
 ```
 
-DATUM mode implements the experimental BIP-110 profile-0 dialect from
-`Maveth/datum_gateway`'s `bip110-pow-v2` branch. It hashes the gateway's direct
+The current Justin Filip DATUM fork exposes BIP-110 work using the Sia-style
+layout, so connect to the StartOS DATUM package using `--sia`:
+
+```sh
+target/release/blake2b-apple-miner \
+  --sia \
+  --device both \
+  --stratum-url=stratum+tcp://127.0.0.1:23334 \
+  --username=local.worker \
+  --password=x
+```
+
+DATUM mode remains compatible with the older experimental precomputed-mid
+dialect from Maveth's `bip110-pow-v2` branch. It hashes the gateway's direct
 80-byte ASIC input and submits the fixed zero `extranonce2` required by that
 lab protocol:
 
@@ -143,9 +155,10 @@ BIP-110 implementation.
 Installable package sources for the pinned BIP110 Bitcoin node and DATUM
 gateway are in [`startos/`](startos/README.md). The included GitHub Actions
 workflow builds x86_64 and aarch64 `.s9pk` artifacts remotely, so the C++
-services do not need to be compiled on this Mac. The node uses a private
-peerless regtest chain, pre-mines heights 1–19, and leaves the BLAKE2b height-20
-activation block for this miner's `--datum` mode.
+services do not need to be compiled on this Mac. In dummy mode the node uses a
+private peerless regtest chain, pre-mines heights 1–19, and leaves the BLAKE2b
+height-20 activation block for this miner's `--sia` mode through the current
+DATUM gateway.
 
 ## Verify
 

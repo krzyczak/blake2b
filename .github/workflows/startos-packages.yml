@@ -11,6 +11,7 @@ on:
         options:
           - all
           - bitcoin-bip110
+          - datum-bip110
           - mempool-guide
 
 permissions:
@@ -24,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(inputs.package == 'mempool-guide' && '[{"package":"mempool-guide","target":"x86","runner":"ubuntu-latest"}]' || inputs.package == 'bitcoin-bip110' && '[{"package":"bitcoin-bip110","target":"x86","runner":"ubuntu-latest"}]' || '[{"package":"bitcoin-bip110","target":"x86","runner":"ubuntu-latest"},{"package":"mempool-guide","target":"x86","runner":"ubuntu-latest"}]') }}
+        include: ${{ fromJSON(inputs.package == 'mempool-guide' && '[{"package":"mempool-guide","target":"x86","runner":"ubuntu-latest"}]' || inputs.package == 'bitcoin-bip110' && '[{"package":"bitcoin-bip110","target":"x86","runner":"ubuntu-latest"},{"package":"bitcoin-bip110","target":"arm","runner":"ubuntu-24.04-arm"}]' || inputs.package == 'datum-bip110' && '[{"package":"datum-bip110","target":"x86","runner":"ubuntu-latest"},{"package":"datum-bip110","target":"arm","runner":"ubuntu-24.04-arm"}]' || '[{"package":"bitcoin-bip110","target":"x86","runner":"ubuntu-latest"},{"package":"bitcoin-bip110","target":"arm","runner":"ubuntu-24.04-arm"},{"package":"datum-bip110","target":"x86","runner":"ubuntu-latest"},{"package":"datum-bip110","target":"arm","runner":"ubuntu-24.04-arm"},{"package":"mempool-guide","target":"x86","runner":"ubuntu-latest"}]') }}
 
     steps:
       - name: Free disk space for image builds

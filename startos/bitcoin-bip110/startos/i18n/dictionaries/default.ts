@@ -1,10 +1,21 @@
 export const DEFAULT_LANG = 'en_US'
 
 const dict = {
-  'BIP110 Regtest': 0,
+  'Bitcoin Knots BIP110': 0,
   'Bitcoin RPC is starting': 1,
-  'Bootstrapping regtest blocks': 2,
-  'Ready for BLAKE2b mining at height ${height}': 3,
+  'Bootstrapping dummy regtest blocks': 2,
+  'Ready for mining on ${network} at height ${height}': 3,
+  'Synchronizing ${network}: ${blocks}/${headers} blocks': 4,
+  Network: 5,
+  'Choose the Bitcoin network. Public networks perform a real initial block download; each mode keeps separate chain data.': 6,
+  'Isolated dummy regtest': 7,
+  'Testnet4 (public BLAKE2b network)': 8,
+  'Signet (public)': 9,
+  'Regtest (local, unbootstrapped)': 10,
+  'Select Network': 11,
+  'Select dummy mode, testnet4, signet, or a clean local regtest. Changing networks automatically restarts the service.': 12,
+  'Testnet4 and signet download and validate their real public chains. Regtest has no canonical public peer network.': 13,
+  Configuration: 14,
 } as const
 
 export type I18nKey = keyof typeof dict

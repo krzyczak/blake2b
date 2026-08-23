@@ -324,8 +324,15 @@ impl SessionState {
     }
 }
 
-pub fn subscribe_request() -> Value {
-    json!({"id": 1, "method": "mining.subscribe", "params": ["blake2b-apple-miner/0.1.0"]})
+pub fn subscribe_request(mode: Mode) -> Value {
+    let user_agent = if mode == Mode::Datum {
+        // Maveth's current gateway defaults to Sia-Sv1 and selects the
+        // precomputed-mid dialect used by --datum through this marker.
+        "blake2b-apple-miner/0.1.0 bip110-lab"
+    } else {
+        "blake2b-apple-miner/0.1.0"
+    };
+    json!({"id": 1, "method": "mining.subscribe", "params": [user_agent]})
 }
 
 pub fn authorize_request(username: &str, password: &str) -> Value {
@@ -533,5 +540,17 @@ mod tests {
             .parse_job(&params, &config(Mode::Datum))
             .unwrap_err();
         assert!(error.to_string().contains("coinb2 field must be empty"));
+    }
+
+    #[test]
+    fn datum_subscribe_selects_lab_mid_dialect() {
+        assert_eq!(
+            subscribe_request(Mode::Datum)["params"][0],
+            "blake2b-apple-miner/0.1.0 bip110-lab"
+        );
+        assert_eq!(
+            subscribe_request(Mode::Sia)["params"][0],
+            "blake2b-apple-miner/0.1.0"
+        );
     }
 }

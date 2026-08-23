@@ -1,7 +1,7 @@
 FROM debian:bookworm-slim AS builder
 
-ARG BITCOIN_COMMIT=dedbfa8dd33e633426120f3608f489bc185aa6ba
-ARG BITCOIN_TARBALL_SHA256=f65b9b0cd2b3b57a8ccd18633472bc7dd63031ac1011df8f5263d39434e638fb
+ARG BITCOIN_COMMIT=c25ad6bcd18fa65cd78f176a52be062411507741
+ARG BITCOIN_TARBALL_SHA256=4b7ac71af9e8989bc8882d44edcd51fa1bf200d375a5996109d72fe74dc8ecfe
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /src
 
 RUN curl --fail --location --silent --show-error \
-        "https://github.com/luke-jr/bitcoin/archive/${BITCOIN_COMMIT}.tar.gz" \
+        "https://github.com/bitcoinknots/bitcoin/archive/${BITCOIN_COMMIT}.tar.gz" \
         --output /tmp/bitcoin.tar.gz \
     && echo "${BITCOIN_TARBALL_SHA256}  /tmp/bitcoin.tar.gz" | sha256sum --check --strict \
     && tar --extract --gzip --file /tmp/bitcoin.tar.gz --strip-components=1 \
@@ -34,7 +34,6 @@ RUN cmake -S /src -B /build \
         -DENABLE_EXTERNAL_SIGNER=OFF \
         -DENABLE_TOR_SUBPROCESS=OFF \
         -DENABLE_WALLET=OFF \
-        -DRDTS_CONSENT=IMPLICIT \
         -DWITH_BDB=OFF \
         -DWITH_ZMQ=OFF \
     && cmake --build /build --parallel 2 --target bitcoind bitcoin-cli

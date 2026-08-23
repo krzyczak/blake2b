@@ -30,9 +30,10 @@ cat > "$DATA_DIR/config.json" <<EOF
   },
   "mining": {
     "pool_address": "mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn",
-    "coinbase_tag_primary": "BIP110-LAB",
-    "coinbase_tag_secondary": "StartOS-regtest",
-    "coinbase_unique_id": 4242
+    "coinbase_tag_primary": "Totoro",
+    "coinbase_tag_secondary": "StartOS-BIP110",
+    "coinbase_unique_id": 4242,
+    "pow_algorithm": "auto"
   },
   "api": {
     "admin_password": "",

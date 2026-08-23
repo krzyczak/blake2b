@@ -1,13 +1,13 @@
 export const short = {
-  en_US: 'Experimental BIP110 DATUM-to-Stratum gateway for regtest mining',
+  en_US: 'BIP110 DATUM-to-Stratum gateway for Knots RC2',
 }
 
 export const long = {
   en_US:
-    'Pinned experimental DATUM Gateway build for the BIP110 profile-0 BLAKE2b lab protocol. It connects automatically to Bitcoin BIP110 Lab and presents a raw Stratum TCP endpoint for the Apple Silicon miner.',
+    'Pinned Justin Filip DATUM Gateway build with integrated BLAKE2b header-v2 support. It connects automatically to Bitcoin Knots BIP110 and presents a Sia-style raw Stratum TCP endpoint for the Apple Silicon miner on dummy regtest or public testnet4.',
 }
 
 export const bitcoinDependencyDescription = {
   en_US:
-    'Provides the isolated regtest block templates and validates submitted BLAKE2b blocks.',
+    'Provides network-selected block templates and validates submitted BLAKE2b blocks.',
 }

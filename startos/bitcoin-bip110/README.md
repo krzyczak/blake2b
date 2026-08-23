@@ -1,16 +1,33 @@
-# Bitcoin BIP110 Lab for StartOS
+# Bitcoin Knots BIP110 for StartOS
 
-Experimental StartOS package for the `pow_hf_blake2b` Bitcoin branch, pinned to
-commit `dedbfa8dd33e633426120f3608f489bc185aa6ba` and its verified source
-tarball hash.
+Experimental StartOS package pinned to Bitcoin Knots tag
+`v29.4.1.knots20260508rc2`, peeled commit
+`c25ad6bcd18fa65cd78f176a52be062411507741`, and a verified source-tarball
+SHA-256.
 
-The service is deliberately regtest-only and peerless. Its first-start helper
-mines real, validated SHA256d regtest blocks through height 19. BLAKE2b
-activates at height 20, which is left for the DATUM gateway and external miner.
-This avoids IBD without falsifying validation state.
+Use the **Select Network** action to choose one of four modes:
 
-The image is compiled with `RDTS_CONSENT=IMPLICIT`. This is an intentional
-build-time acceptance of BIP110/RDTS for this explicitly named experimental
-lab package, so the headless StartOS daemon does not stop for runtime consent.
+- `dummy` preserves the original package behavior. It uses the existing
+  `/data` datadir, creates 19 validated SHA256d regtest blocks, and leaves the
+  BLAKE2b activation block at height 20 for the external miner. Its private
+  headline remains `BIP110-LAB` for compatibility with existing dummy chains.
+- `testnet4` joins and validates the public testnet4 chain. RC2 activates
+  BLAKE2b at height 149537 and uses `blake2b_headline=Totoro`.
+- `signet` joins the public default signet. Its blocks additionally require an
+  authorized signet block signature, so this BLAKE2b miner cannot mine public
+  signet by itself.
+- `regtest` starts a separate, ordinary local regtest at genesis without the
+  dummy bootstrap or a public peer network.
+
+Public modes perform a real Initial Block Download. They use pruning to limit
+retained block data, but do not fake validation state. Each non-dummy mode has
+its own datadir under `/data/networks`, so changing networks does not mix chain
+state.
+
+The node must be configured with the consensus headline. Public testnet4 mode
+uses `Totoro`; dummy mode uses its original private `BIP110-LAB` value. The
+node supplies the headline in `getblocktemplate` at the activation block, the
+modified DATUM gateway inserts it into the coinbase, and the miner hashes the
+resulting job.
 
 Supported StartOS architectures: x86_64 and aarch64.

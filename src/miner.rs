@@ -287,7 +287,7 @@ fn run_session(
     stream.set_read_timeout(Some(Duration::from_millis(25)))?;
     stream.set_write_timeout(Some(Duration::from_secs(5)))?;
     let mut stream = BufReader::new(stream);
-    write_message(stream.get_mut(), &protocol::subscribe_request())?;
+    write_message(stream.get_mut(), &protocol::subscribe_request(config.mode))?;
     write_message(
         stream.get_mut(),
         &protocol::authorize_request(&config.username, &config.password),
