@@ -1,0 +1,27 @@
+diff --git a/src/datum_api.c b/src/datum_api.c
+--- a/src/datum_api.c
++++ b/src/datum_api.c
+@@ -472,7 +472,4 @@ static enum MHD_DigestAuthAlgorithm datum_api_pick_digest_algo(struct MHD_Conne
+-	const char *ua = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "User-Agent");
+-	if (!ua) ua = "";
+-	if (datum_config.api_allow_insecure_auth) {
+-		if (strstr(ua, "AppleWebKit/") && !(strstr(ua, "Chrome/") || strstr(ua, "Brave/") || strstr(ua, "Edge/"))) {
+-			return MHD_DIGEST_ALG_MD5;
+-		}
+-	}
++	(void)connection;
++	if (datum_config.api_allow_insecure_auth) {
++		return MHD_DIGEST_ALG_MD5;
++	}
+@@ -484 +481 @@ bool datum_api_check_admin_password_httponly(struct MHD_Connection * const conne
+-	static bool safari_warned = false;
++	static bool insecure_digest_warned = false;
+@@ -495,4 +492,4 @@ bool datum_api_check_admin_password_httponly(struct MHD_Connection * const conne
+-	if (algo == MHD_DIGEST_ALG_MD5 && (ret == MHD_NO || !safari_warned)) {
+-		DLOG_WARN("Detected login request from Apple Safari. For some reason, this browser only supports obsolete and insecure MD5 digest authentication. Login at your own risk!");
+-		safari_warned = true;
+-	}
++	if (algo == MHD_DIGEST_ALG_MD5 && !insecure_digest_warned) {
++		DLOG_WARN("Dashboard compatibility mode uses legacy MD5 digest authentication. Use only through a trusted encrypted interface.");
++		insecure_digest_warned = true;
++	}

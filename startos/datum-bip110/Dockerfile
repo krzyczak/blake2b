@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libjansson-dev \
         libmicrohttpd-dev \
         libsodium-dev \
+        patch \
         pkgconf \
     && rm -rf /var/lib/apt/lists/*
 
@@ -23,6 +24,11 @@ RUN curl --fail --location --silent --show-error \
     && echo "${DATUM_TARBALL_SHA256}  /tmp/datum.tar.gz" | sha256sum --check --strict \
     && tar --extract --gzip --file /tmp/datum.tar.gz --strip-components=1 \
     && rm /tmp/datum.tar.gz
+
+COPY browser-auth-compat.patch /tmp/browser-auth-compat.patch
+
+RUN patch --directory=/src --strip=1 --input=/tmp/browser-auth-compat.patch \
+    && rm /tmp/browser-auth-compat.patch
 
 RUN cmake -S /src -B /build -DCMAKE_BUILD_TYPE=Release \
     && cmake --build /build --parallel

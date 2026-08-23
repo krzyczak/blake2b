@@ -26,6 +26,10 @@ digest authentication; retrieve the generated `admin` credentials from
 **Actions → Dashboard Credentials**. Dashboard configuration editing remains
 disabled because StartOS owns the service configuration.
 
+Protected pages use browser-compatible MD5 HTTP Digest authentication. Open
+them only through the HTTPS interface published by StartOS; do not expose the
+dashboard's internal port 7152 directly to an untrusted network.
+
 Use **Actions → Set Mining Identity** to change the primary and secondary
 coinbase tags. For example, set the primary tag to `/MyMiner/` and the
 secondary tag to `Totoro`. The gateway restarts and embeds those strings in

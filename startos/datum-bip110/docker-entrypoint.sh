@@ -43,7 +43,7 @@ cat > "$DATA_DIR/config.json" <<EOF
     "admin_password": "${DASHBOARD_ADMIN_PASSWORD}",
     "listen_addr": "0.0.0.0",
     "listen_port": 7152,
-    "allow_insecure_auth": false,
+    "allow_insecure_auth": true,
     "modify_conf": false
   },
   "logger": {

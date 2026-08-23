@@ -29,4 +29,9 @@ Configuration editing is disabled, and protected detail pages use a generated
 password stored in the backed-up package volume. Retrieve it with the
 **Dashboard Credentials** StartOS action.
 
+For browser interoperability, protected pages use legacy MD5 HTTP Digest
+authentication through the StartOS HTTPS interface. The generated password is
+long and random, configuration editing remains disabled, and the dashboard's
+internal HTTP port should not be exposed directly outside StartOS.
+
 Supported StartOS architectures: x86_64 and aarch64.
