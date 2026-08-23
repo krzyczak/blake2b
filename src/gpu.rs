@@ -295,6 +295,7 @@ mod tests {
             id: "gpu-test".to_owned(),
             blob,
             target: target.clone(),
+            network_target: None,
             nonce_offset,
             nonce_size,
             nonce_order,

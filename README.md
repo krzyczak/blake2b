@@ -104,6 +104,14 @@ target/release/blake2b-apple-miner \
 `--sia`, `--datum`, and `--normal` are mutually exclusive. One is required.
 `--device` overrides the YAML device. `threads` is ignored in GPU-only mode.
 
+The periodic console line includes `best_share`, the actual difficulty of the
+strongest share found since the process started. A new record also prints its
+job, nonce, and hash immediately. In Sia and DATUM modes the miner decodes the
+network target from the job's `nBits`; a hash meeting it produces a prominent
+`BLOCK CANDIDATE FOUND` message before the share is submitted. The gateway and
+node remain authoritative for whether that candidate is accepted and added to
+the chain.
+
 ```sh
 target/release/blake2b-apple-miner --sia --device cpu
 target/release/blake2b-apple-miner --sia --device gpu

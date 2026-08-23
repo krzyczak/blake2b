@@ -12,6 +12,7 @@ pub struct JobSpec {
     pub id: String,
     pub blob: Vec<u8>,
     pub target: Target,
+    pub network_target: Option<Target>,
     pub nonce_offset: usize,
     pub nonce_size: usize,
     pub nonce_order: ByteOrder,
@@ -119,6 +120,8 @@ impl SessionState {
             .target
             .clone()
             .context("Sia job arrived before mining.set_difficulty or mining.set_target")?;
+        let network_target = Target::from_compact_hex(value_string(&params[6], "nbits")?)
+            .context("invalid Sia network target")?;
         let id = value_string(&params[0], "job ID")?.to_owned();
         let parent = decode_exact(value_string(&params[1], "prevhash")?, 32, "Sia prevhash")?;
         let coinb1 = decode_hex(value_string(&params[2], "coinb1")?)?;
@@ -162,6 +165,7 @@ impl SessionState {
             id,
             blob: header,
             target,
+            network_target: Some(network_target),
             nonce_offset: 32,
             nonce_size: 8,
             nonce_order: ByteOrder::Little,
@@ -190,6 +194,8 @@ impl SessionState {
             .target
             .clone()
             .context("DATUM job arrived before mining.set_difficulty or mining.set_target")?;
+        let network_target = Target::from_compact_hex(value_string(&params[6], "nbits")?)
+            .context("invalid DATUM network target")?;
         let id = value_string(&params[0], "job ID")?.to_owned();
         let previous = decode_exact(
             value_string(&params[1], "previous ASIC input")?,
@@ -219,6 +225,7 @@ impl SessionState {
             id,
             blob: header,
             target,
+            network_target: Some(network_target),
             nonce_offset: 32,
             nonce_size: 8,
             nonce_order: ByteOrder::Little,
@@ -302,6 +309,7 @@ impl SessionState {
             id,
             blob,
             target,
+            network_target: None,
             nonce_offset,
             nonce_size,
             nonce_order,
@@ -437,6 +445,10 @@ mod tests {
         assert_eq!(job.nonce_offset, 32);
         assert_eq!(job.hash_order, ByteOrder::Big);
         assert_eq!(
+            job.network_target.as_ref(),
+            Some(&Target::from_compact_hex("1a08645a").unwrap())
+        );
+        assert_eq!(
             job.submission("worker", 4, "b2957c0000000000".to_owned())["params"],
             json!([
                 "worker",
@@ -467,6 +479,7 @@ mod tests {
         assert_eq!(job.nonce_size, 4);
         assert_eq!(job.nonce_order, ByteOrder::Big);
         assert_eq!(job.hash_order, ByteOrder::Little);
+        assert!(job.network_target.is_none());
     }
 
     #[test]
@@ -503,6 +516,10 @@ mod tests {
         assert_eq!(job.nonce_size, 8);
         assert_eq!(job.nonce_order, ByteOrder::Little);
         assert_eq!(job.hash_order, ByteOrder::Big);
+        assert_eq!(
+            job.network_target.as_ref(),
+            Some(&Target::from_compact_hex("207fffff").unwrap())
+        );
         assert_eq!(
             job.submission("local.worker", 10, "8877665544332211".to_owned())["params"],
             json!([
