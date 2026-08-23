@@ -1,10 +1,10 @@
 import { IMPOSSIBLE, VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '0.1.0:4',
+  version: '0.1.0:5',
   releaseNotes: {
     en_US:
-      'Update Bitcoin Knots to v29.4.1.knots20260508rc2 and add selectable dummy, testnet4, signet, and regtest modes with isolated chain data and sync-aware health checks.',
+      'Add a StartOS action for safe, per-network blake2b_headline overrides while retaining the RC2 defaults for existing installations.',
   },
   migrations: {
     up: async () => {},

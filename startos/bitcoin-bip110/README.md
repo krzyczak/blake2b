@@ -30,4 +30,10 @@ node supplies the headline in `getblocktemplate` at the activation block, the
 modified DATUM gateway inserts it into the coinbase, and the miner hashes the
 resulting job.
 
+The **Set BLAKE2b Headline** action stores a separate override for each network
+and restarts the service when it is running. Input is limited to one printable
+ASCII line to prevent generated-configuration injection. The setting must
+exactly match the release candidate's announced consensus value; it is not a
+miner branding field.
+
 Supported StartOS architectures: x86_64 and aarch64.

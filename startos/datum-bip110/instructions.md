@@ -19,10 +19,23 @@ target/release/blake2b-apple-miner \
 Replace the example address with the exact non-SSL address StartOS displays;
 the external port may differ when port 23334 is already allocated.
 
+Use **Actions → Set Mining Identity** to change the primary and secondary
+coinbase tags. For example, set the primary tag to `/MyMiner/` and the
+secondary tag to `Totoro`. The gateway restarts and embeds those strings in
+new solo-mined coinbase transactions. This is independent of the Knots
+`blake2b_headline` consensus setting.
+
+Mempool explorers identify miners by matching coinbase tags or payout
+addresses against their own pool registry. Your tag will be visible in the raw
+coinbase immediately, but a public site will show your chosen display name and
+pickaxe only after its operator adds a matching registry entry. Ask the
+mempool.guide operator to map your exact unique tag to your desired name.
+
 The gateway uses minimum share difficulty 1, automatically follows the node's
-`!blake2b` template rule, disables connection to an external DATUM pool, tags
-its coinbase with `Totoro`, and pays a disposable testnet/regtest address. In
-dummy mode, a submitted height-20 block belongs to the private regtest chain.
+`!blake2b` template rule, disables connection to an external DATUM pool, and
+pays a disposable testnet/regtest address. Its default tags are `Totoro` and
+`StartOS-BIP110`. In dummy mode, a submitted height-20 block belongs to the
+private regtest chain.
 In testnet4 mode, an accepted block belongs to the public chain and can be
 viewed at `https://mempool.guide/testnet4`. The payout key is not included in
 this package and test coins have no monetary value.

@@ -4,10 +4,12 @@ import { setDependencies } from '../dependencies'
 import { setInterfaces } from '../interfaces'
 import { sdk } from '../sdk'
 import { versionGraph } from '../versions'
+import { seedMiningSettings } from './seed-mining-settings'
 
 export const init = sdk.setupInit(
   restoreInit,
   versionGraph,
+  seedMiningSettings,
   setInterfaces,
   setDependencies,
   actions,

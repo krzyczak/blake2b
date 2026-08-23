@@ -12,4 +12,10 @@ the canonical header-v2 layout, and validates/submits BLAKE2b work. Use the
 Apple miner's `--sia` mode with this package. No remote DATUM pool is
 configured.
 
+The **Set Mining Identity** StartOS action persists validated primary and
+secondary coinbase tags and restarts the gateway. These strings are embedded
+in each solo-mined coinbase. Explorer branding remains registry-based: setting
+a tag makes it visible on-chain, while the public explorer operator must map
+that tag to a display name.
+
 Supported StartOS architectures: x86_64 and aarch64.

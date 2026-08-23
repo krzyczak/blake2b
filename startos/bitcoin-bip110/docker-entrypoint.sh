@@ -14,7 +14,7 @@ case "$MODE" in
         PEER_CONFIG='dnsseed=0
 fixedseeds=0'
         MODE_CONFIG='testactivationheight=blake2b@20'
-        HEADLINE=BIP110-LAB
+        DEFAULT_HEADLINE=BIP110-LAB
         BOOTSTRAP_DUMMY=1
         ;;
     testnet4)
@@ -25,7 +25,7 @@ fixedseeds=0'
 fixedseeds=1
 prune=550'
         MODE_CONFIG=''
-        HEADLINE=Totoro
+        DEFAULT_HEADLINE=Totoro
         BOOTSTRAP_DUMMY=0
         ;;
     signet)
@@ -36,7 +36,7 @@ prune=550'
 fixedseeds=1
 prune=550'
         MODE_CONFIG=''
-        HEADLINE=Totoro
+        DEFAULT_HEADLINE=Totoro
         BOOTSTRAP_DUMMY=0
         ;;
     regtest)
@@ -46,7 +46,7 @@ prune=550'
         PEER_CONFIG='dnsseed=0
 fixedseeds=0'
         MODE_CONFIG=''
-        HEADLINE=Totoro
+        DEFAULT_HEADLINE=Totoro
         BOOTSTRAP_DUMMY=0
         ;;
     *)
@@ -54,6 +54,8 @@ fixedseeds=0'
         exit 64
         ;;
 esac
+
+HEADLINE="${BITCOIN_BLAKE2B_HEADLINE:-$DEFAULT_HEADLINE}"
 
 mkdir -p "$DATA_DIR"
 umask 077

@@ -6,3 +6,6 @@ export const rpcPort = 18443
 
 export const dataDirForNetwork = (network: NetworkMode): string =>
   network === 'dummy' ? '/data' : `/data/networks/${network}`
+
+export const defaultHeadlineForNetwork = (network: NetworkMode): string =>
+  network === 'dummy' ? 'BIP110-LAB' : 'Totoro'

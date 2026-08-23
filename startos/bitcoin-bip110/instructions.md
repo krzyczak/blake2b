@@ -15,16 +15,21 @@ chain:
 - **Regtest** creates a separate, unbootstrapped local regtest. Regtest has no
   canonical public network to synchronize with.
 
+After selecting a network, **Actions → Set BLAKE2b Headline** shows its current
+value and lets you store a separate override for that network. RC2 defaults to
+`Totoro` on testnet4 and `BIP110-LAB` in dummy mode. Change it only when the
+Knots release instructions publish a new exact value: the setting is
+consensus-critical at the BLAKE2b activation block.
+
 Each mode keeps separate chain data. Public networks use a pruned, fully
 validated IBD; there is no safe fake-IBD shortcut for producing blocks that
 public peers will accept.
 
-RC2 testnet4 requires `blake2b_headline=Totoro`. The package writes this into
-the node's configuration in testnet4 mode; dummy mode keeps `BIP110-LAB` so an
-existing private chain does not change consensus rules. At the activation
-block the node passes the headline through `getblocktemplate`, DATUM adds it to
-the coinbase, and the miner receives the finished BIP110 job. It is therefore
-a node setting, not a miner command-line option.
+The package writes the selected network's headline into `bitcoin.conf`. At the
+activation block the node passes it through `getblocktemplate`, DATUM adds it
+to the coinbase, and the miner receives the finished BIP110 job. It is a node
+setting, not the explorer-visible mining identity and not a miner command-line
+option.
 
 To mine against this node, install and start DATUM BIP110 Gateway and connect
 the Apple miner to its Stratum interface using `--sia`. The node itself does

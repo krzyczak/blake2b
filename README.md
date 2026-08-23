@@ -160,6 +160,11 @@ private peerless regtest chain, pre-mines heights 1–19, and leaves the BLAKE2b
 height-20 activation block for this miner's `--sia` mode through the current
 DATUM gateway.
 
+The Knots package exposes a per-network consensus-headline action. The DATUM
+package separately exposes primary and secondary coinbase-tag fields for your
+on-chain miner identity. A public Mempool instance will display that identity
+only after its mining-pool registry maps your unique tag to a display name.
+
 ## Verify
 
 ```sh

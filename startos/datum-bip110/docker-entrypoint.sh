@@ -8,6 +8,8 @@ fi
 
 BITCOIN_RPC_ADDRESS="$1"
 DATA_DIR=/data
+COINBASE_TAG_PRIMARY="${DATUM_COINBASE_TAG_PRIMARY:-Totoro}"
+COINBASE_TAG_SECONDARY="${DATUM_COINBASE_TAG_SECONDARY:-StartOS-BIP110}"
 
 mkdir -p "$DATA_DIR"
 umask 077
@@ -30,8 +32,8 @@ cat > "$DATA_DIR/config.json" <<EOF
   },
   "mining": {
     "pool_address": "mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn",
-    "coinbase_tag_primary": "Totoro",
-    "coinbase_tag_secondary": "StartOS-BIP110",
+    "coinbase_tag_primary": "${COINBASE_TAG_PRIMARY}",
+    "coinbase_tag_secondary": "${COINBASE_TAG_SECONDARY}",
     "coinbase_unique_id": 4242,
     "pow_algorithm": "auto"
   },

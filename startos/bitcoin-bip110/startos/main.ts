@@ -1,12 +1,13 @@
 import { networkSettingsFile } from './file-models/network-settings.json'
 import { i18n } from './i18n'
 import { sdk } from './sdk'
-import { dataDirForNetwork } from './utils'
+import { dataDirForNetwork, defaultHeadlineForNetwork } from './utils'
 
 export const main = sdk.setupMain(async ({ effects }) => {
-  const network =
-    (await networkSettingsFile.read((settings) => settings.network).once()) ??
-    'dummy'
+  const settings = await networkSettingsFile.read((value) => value).once()
+  const network = settings?.network ?? 'dummy'
+  const headline =
+    settings?.headlines[network] ?? defaultHeadlineForNetwork(network)
   const dataDir = dataDirForNetwork(network)
 
   const bitcoindSub = await sdk.SubContainer.eager(
@@ -27,6 +28,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
       command: ['/usr/local/bin/bitcoin-bip110-entrypoint'],
       env: {
         BITCOIN_NETWORK_MODE: network,
+        BITCOIN_BLAKE2B_HEADLINE: headline,
       },
       sigtermTimeout: 120_000,
     },

@@ -69,13 +69,20 @@ The packages regenerate these settings at every start:
 - Network: selected in the Bitcoin package action.
 - Dummy activation: BLAKE2b at height 20 with headline `BIP110-LAB`.
 - Public testnet4: RC2's built-in activation at height 149537 with headline
-  `Totoro` and real peer synchronization.
+  `Totoro` and real peer synchronization. The node's **Set BLAKE2b Headline**
+  action can override this separately for each network when a later release
+  candidate announces a different exact value.
 - Bitcoin RPC: port 18443, bridge-only on StartOS.
 - Gateway Stratum: raw TCP port 23334 (StartOS may assign another external
   port if it is already occupied).
 - Minimum share difficulty: 1.
 - External DATUM pool: disabled.
 - Payout: disposable testnet/regtest Base58 address with no packaged wallet.
+
+DATUM's **Set Mining Identity** action controls the two on-chain coinbase tags.
+These are the strings an explorer can match to a miner name; the Knots
+headline is a separate consensus value. Public explorers still need a pool
+registry entry for the tag before they show a named pickaxe label.
 
 The node does not speak Stratum. The companion gateway translates Knots RPC
 and BIP22 templates into Sia-style BLAKE2b Stratum, so use the miner's `--sia`

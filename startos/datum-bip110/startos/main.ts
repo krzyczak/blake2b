@@ -1,6 +1,11 @@
 import { i18n } from './i18n'
 import { sdk } from './sdk'
 import {
+  defaultCoinbaseTagPrimary,
+  defaultCoinbaseTagSecondary,
+  miningSettingsFile,
+} from './file-models/mining-settings.json'
+import {
   bitcoinPackageId,
   bitcoinRpcHostId,
   bitcoinRpcPort,
@@ -8,6 +13,7 @@ import {
 } from './utils'
 
 export const main = sdk.setupMain(async ({ effects }) => {
+  const miningSettings = await miningSettingsFile.read((value) => value).once()
   const rpcAddress = await sdk.host
     .getBridgeAddress(effects, {
       packageId: bitcoinPackageId,
@@ -36,6 +42,12 @@ export const main = sdk.setupMain(async ({ effects }) => {
     subcontainer: datumSub,
     exec: {
       command: ['/usr/local/bin/datum-bip110-entrypoint', rpcAddress],
+      env: {
+        DATUM_COINBASE_TAG_PRIMARY:
+          miningSettings?.coinbaseTagPrimary ?? defaultCoinbaseTagPrimary,
+        DATUM_COINBASE_TAG_SECONDARY:
+          miningSettings?.coinbaseTagSecondary ?? defaultCoinbaseTagSecondary,
+      },
       sigtermTimeout: 30_000,
     },
     ready: {

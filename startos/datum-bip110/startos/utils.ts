@@ -1,3 +1,4 @@
+export const packageId = 'datum-bip110'
 export const bitcoinPackageId = 'bitcoin-bip110'
 export const bitcoinRpcHostId = 'rpc'
 export const bitcoinRpcPort = 18443
