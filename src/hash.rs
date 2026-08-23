@@ -49,10 +49,41 @@ pub fn blake2b256(input: &[u8]) -> [u8; 32] {
 #[derive(Clone)]
 pub struct PreparedBlock {
     words: [u64; 16],
+    #[cfg(target_arch = "aarch64")]
+    sia_midstate: Option<[u64; 12]>,
     len: usize,
     nonce_offset: usize,
     nonce_size: usize,
     nonce_little_endian: bool,
+}
+
+pub(crate) struct Hash4 {
+    words: [[u64; 4]; 4],
+}
+
+impl Hash4 {
+    #[inline(always)]
+    pub(crate) fn words(&self, lane: usize) -> [u64; 4] {
+        [
+            self.words[0][lane],
+            self.words[1][lane],
+            self.words[2][lane],
+            self.words[3][lane],
+        ]
+    }
+
+    #[inline]
+    pub(crate) fn digest(&self, lane: usize) -> [u8; 32] {
+        let mut output = [0u8; 32];
+        for (word, chunk) in self.words(lane).iter().zip(output.chunks_exact_mut(8)) {
+            chunk.copy_from_slice(&word.to_le_bytes());
+        }
+        output
+    }
+
+    fn digests(&self) -> [[u8; 32]; 4] {
+        std::array::from_fn(|lane| self.digest(lane))
+    }
 }
 
 impl PreparedBlock {
@@ -71,8 +102,14 @@ impl PreparedBlock {
         let mut block = [0u8; 128];
         block[..input.len()].copy_from_slice(input);
         let words = words(&block);
+        #[cfg(target_arch = "aarch64")]
+        let sia_midstate =
+            (input.len() == 80 && nonce_offset == 32 && nonce_size == 8 && nonce_little_endian)
+                .then(|| prepare_sia_midstate(&words));
         Some(Self {
             words,
+            #[cfg(target_arch = "aarch64")]
+            sia_midstate,
             len: input.len(),
             nonce_offset,
             nonce_size,
@@ -81,6 +118,17 @@ impl PreparedBlock {
     }
 
     pub fn hash4(&self, first_nonce: u64) -> [[u8; 32]; 4] {
+        self.hash4_words(first_nonce).digests()
+    }
+
+    pub(crate) fn hash4_words(&self, first_nonce: u64) -> Hash4 {
+        #[cfg(target_arch = "aarch64")]
+        if let Some(midstate) = &self.sia_midstate {
+            unsafe {
+                return neon::hash4_sia(&self.words, midstate, first_nonce);
+            }
+        }
+
         #[cfg(target_arch = "aarch64")]
         if self.nonce_size == 8 && self.nonce_offset.is_multiple_of(8) {
             unsafe {
@@ -98,7 +146,7 @@ impl PreparedBlock {
         for (lane, block) in blocks.iter_mut().enumerate() {
             self.write_nonce(block, first_nonce.wrapping_add(lane as u64));
         }
-        hash4_one_block(&blocks, self.len)
+        hash4_one_block_words(&blocks, self.len)
     }
 
     pub fn nonce_hex(&self, nonce: u64) -> String {
@@ -135,7 +183,24 @@ impl PreparedBlock {
     }
 }
 
-fn hash4_one_block(blocks: &[[u64; 16]; 4], len: usize) -> [[u8; 32]; 4] {
+#[cfg(target_arch = "aarch64")]
+fn prepare_sia_midstate(words: &[u64; 16]) -> [u64; 12] {
+    let mut v = [0u64; 16];
+    for i in 0..8 {
+        v[i] = if i == 0 { IV[i] ^ 0x0101_0020 } else { IV[i] };
+        v[i + 8] = IV[i];
+    }
+    v[12] ^= 80;
+    v[14] = !v[14];
+    g(&mut v, 0, 4, 8, 12, words[0], words[1]);
+    g(&mut v, 1, 5, 9, 13, words[2], words[3]);
+    g(&mut v, 3, 7, 11, 15, words[6], words[7]);
+    [
+        v[0], v[4], v[8], v[12], v[1], v[5], v[9], v[13], v[3], v[7], v[11], v[15],
+    ]
+}
+
+fn hash4_one_block_words(blocks: &[[u64; 16]; 4], len: usize) -> Hash4 {
     #[cfg(target_arch = "aarch64")]
     unsafe {
         neon::hash4(blocks, len)
@@ -143,7 +208,9 @@ fn hash4_one_block(blocks: &[[u64; 16]; 4], len: usize) -> [[u8; 32]; 4] {
 
     #[cfg(not(target_arch = "aarch64"))]
     {
-        let mut output = [[0u8; 32]; 4];
+        let mut output = Hash4 {
+            words: [[0u64; 4]; 4],
+        };
         for lane in 0..4 {
             let mut h = IV;
             h[0] ^= 0x0101_0020;
@@ -152,7 +219,9 @@ fn hash4_one_block(blocks: &[[u64; 16]; 4], len: usize) -> [[u8; 32]; 4] {
                 chunk.copy_from_slice(&word.to_le_bytes());
             }
             compress(&mut h, &block, len as u128, true);
-            output[lane] = digest(h);
+            for (word, lanes) in output.words.iter_mut().enumerate() {
+                lanes[lane] = h[word];
+            }
         }
         output
     }
@@ -216,7 +285,7 @@ fn digest(h: [u64; 8]) -> [u8; 32] {
 mod neon {
     use std::arch::aarch64::*;
 
-    use super::{IV, SIGMA};
+    use super::{Hash4, IV};
 
     #[derive(Clone, Copy)]
     struct U64x4 {
@@ -290,7 +359,7 @@ mod neon {
     }
 
     #[target_feature(enable = "neon")]
-    pub(super) unsafe fn hash4(blocks: &[[u64; 16]; 4], len: usize) -> [[u8; 32]; 4] {
+    pub(super) unsafe fn hash4(blocks: &[[u64; 16]; 4], len: usize) -> Hash4 {
         let mut m = [U64x4::splat(0); 16];
         for i in 0..16 {
             m[i] = U64x4::new(blocks[0][i], blocks[1][i], blocks[2][i], blocks[3][i]);
@@ -305,7 +374,7 @@ mod neon {
         nonce_word: usize,
         first_nonce: u64,
         little_endian: bool,
-    ) -> [[u8; 32]; 4] {
+    ) -> Hash4 {
         let mut m = [U64x4::splat(0); 16];
         for i in 0..16 {
             m[i] = U64x4::splat(words[i]);
@@ -322,8 +391,46 @@ mod neon {
         compress4(m, len)
     }
 
+    #[target_feature(enable = "neon")]
+    pub(super) unsafe fn hash4_sia(
+        words: &[u64; 16],
+        midstate: &[u64; 12],
+        first_nonce: u64,
+    ) -> Hash4 {
+        let mut m = [U64x4::splat(0); 16];
+        for i in 0..10 {
+            m[i] = U64x4::splat(words[i]);
+        }
+        m[4] = U64x4::new(
+            first_nonce,
+            first_nonce.wrapping_add(1),
+            first_nonce.wrapping_add(2),
+            first_nonce.wrapping_add(3),
+        );
+
+        let mut v = [U64x4::splat(0); 16];
+        v[0] = U64x4::splat(midstate[0]);
+        v[4] = U64x4::splat(midstate[1]);
+        v[8] = U64x4::splat(midstate[2]);
+        v[12] = U64x4::splat(midstate[3]);
+        v[1] = U64x4::splat(midstate[4]);
+        v[5] = U64x4::splat(midstate[5]);
+        v[9] = U64x4::splat(midstate[6]);
+        v[13] = U64x4::splat(midstate[7]);
+        v[3] = U64x4::splat(midstate[8]);
+        v[7] = U64x4::splat(midstate[9]);
+        v[11] = U64x4::splat(midstate[10]);
+        v[15] = U64x4::splat(midstate[11]);
+        v[2] = U64x4::splat(IV[2]);
+        v[6] = U64x4::splat(IV[6]);
+        v[10] = U64x4::splat(IV[2]);
+        v[14] = U64x4::splat(!IV[6]);
+
+        compress4_inner::<true>(m, v)
+    }
+
     #[inline(always)]
-    unsafe fn compress4(m: [U64x4; 16], len: usize) -> [[u8; 32]; 4] {
+    unsafe fn compress4(m: [U64x4; 16], len: usize) -> Hash4 {
         let mut v = [U64x4::splat(0); 16];
         for i in 0..8 {
             let initial = if i == 0 { IV[i] ^ 0x0101_0020 } else { IV[i] };
@@ -333,24 +440,57 @@ mod neon {
         v[12] = v[12].xor(U64x4::splat(len as u64));
         v[14] = v[14].xor(U64x4::splat(u64::MAX));
 
-        for sigma in SIGMA {
-            g(&mut v, 0, 4, 8, 12, m[sigma[0]], m[sigma[1]]);
-            g(&mut v, 1, 5, 9, 13, m[sigma[2]], m[sigma[3]]);
-            g(&mut v, 2, 6, 10, 14, m[sigma[4]], m[sigma[5]]);
-            g(&mut v, 3, 7, 11, 15, m[sigma[6]], m[sigma[7]]);
-            g(&mut v, 0, 5, 10, 15, m[sigma[8]], m[sigma[9]]);
-            g(&mut v, 1, 6, 11, 12, m[sigma[10]], m[sigma[11]]);
-            g(&mut v, 2, 7, 8, 13, m[sigma[12]], m[sigma[13]]);
-            g(&mut v, 3, 4, 9, 14, m[sigma[14]], m[sigma[15]]);
+        compress4_inner::<false>(m, v)
+    }
+
+    #[inline(always)]
+    unsafe fn compress4_inner<const SIA_MIDSTATE: bool>(
+        m: [U64x4; 16],
+        mut v: [U64x4; 16],
+    ) -> Hash4 {
+        macro_rules! round {
+            ($s0:literal, $s1:literal, $s2:literal, $s3:literal,
+             $s4:literal, $s5:literal, $s6:literal, $s7:literal,
+             $s8:literal, $s9:literal, $s10:literal, $s11:literal,
+             $s12:literal, $s13:literal, $s14:literal, $s15:literal) => {{
+                g(&mut v, 0, 4, 8, 12, m[$s0], m[$s1]);
+                g(&mut v, 1, 5, 9, 13, m[$s2], m[$s3]);
+                g(&mut v, 2, 6, 10, 14, m[$s4], m[$s5]);
+                g(&mut v, 3, 7, 11, 15, m[$s6], m[$s7]);
+                g(&mut v, 0, 5, 10, 15, m[$s8], m[$s9]);
+                g(&mut v, 1, 6, 11, 12, m[$s10], m[$s11]);
+                g(&mut v, 2, 7, 8, 13, m[$s12], m[$s13]);
+                g(&mut v, 3, 4, 9, 14, m[$s14], m[$s15]);
+            }};
         }
 
-        let mut output = [[0u8; 32]; 4];
+        if SIA_MIDSTATE {
+            g(&mut v, 2, 6, 10, 14, m[4], m[5]);
+            g(&mut v, 0, 5, 10, 15, m[8], m[9]);
+            g(&mut v, 1, 6, 11, 12, m[10], m[11]);
+            g(&mut v, 2, 7, 8, 13, m[12], m[13]);
+            g(&mut v, 3, 4, 9, 14, m[14], m[15]);
+        } else {
+            round!(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+        }
+        round!(14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3);
+        round!(11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4);
+        round!(7, 9, 3, 1, 13, 12, 11, 14, 2, 6, 5, 10, 4, 0, 15, 8);
+        round!(9, 0, 5, 7, 2, 4, 10, 15, 14, 1, 11, 12, 6, 8, 3, 13);
+        round!(2, 12, 6, 10, 0, 11, 8, 3, 4, 13, 7, 5, 15, 14, 1, 9);
+        round!(12, 5, 1, 15, 14, 13, 4, 10, 0, 7, 6, 3, 9, 2, 8, 11);
+        round!(13, 11, 7, 14, 12, 1, 3, 9, 5, 0, 15, 4, 8, 6, 2, 10);
+        round!(6, 15, 14, 9, 11, 3, 0, 8, 12, 2, 13, 7, 1, 4, 10, 5);
+        round!(10, 2, 8, 4, 7, 6, 1, 5, 15, 11, 9, 14, 3, 12, 13, 0);
+        round!(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+        round!(14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3);
+
+        let mut output = Hash4 {
+            words: [[0u64; 4]; 4],
+        };
         for i in 0..4 {
             let initial = if i == 0 { IV[i] ^ 0x0101_0020 } else { IV[i] };
-            let lanes = U64x4::splat(initial).xor(v[i]).xor(v[i + 8]).lanes();
-            for lane in 0..4 {
-                output[lane][i * 8..i * 8 + 8].copy_from_slice(&lanes[lane].to_le_bytes());
-            }
+            output.words[i] = U64x4::splat(initial).xor(v[i]).xor(v[i + 8]).lanes();
         }
         output
     }

@@ -52,7 +52,7 @@ pub struct Args {
     #[arg(long)]
     pub password: Option<String>,
 
-    /// Worker threads. Zero selects all logical CPUs.
+    /// Worker threads. Zero selects all CPUs, reserving two for Metal in both mode.
     #[arg(short = 't', long)]
     pub threads: Option<usize>,
 
@@ -166,11 +166,17 @@ pub fn load(args: Args) -> Result<Config> {
         .or(url.password)
         .or(file.password)
         .unwrap_or_else(|| "x".to_owned());
-    let threads = args.threads.or(file.threads).unwrap_or(0);
-    let threads = if threads == 0 {
-        std::thread::available_parallelism().map_or(1, usize::from)
+    let device = args.device.or(file.device).unwrap_or_default();
+    let requested_threads = args.threads.or(file.threads).unwrap_or(0);
+    let threads = if requested_threads == 0 {
+        let available = std::thread::available_parallelism().map_or(1, usize::from);
+        if cfg!(target_os = "macos") && device == DeviceMode::Both {
+            available.saturating_sub(2).max(1)
+        } else {
+            available
+        }
     } else {
-        threads
+        requested_threads
     };
     let nonce_size = file.nonce_size.unwrap_or(8);
     if !(1..=8).contains(&nonce_size) {
@@ -179,7 +185,7 @@ pub fn load(args: Args) -> Result<Config> {
     let gpu_batch_size = args
         .gpu_batch_size
         .or(file.gpu_batch_size)
-        .unwrap_or(1_048_576);
+        .unwrap_or(16_777_216);
     if gpu_batch_size == 0 {
         bail!("gpu_batch_size must be greater than zero");
     }
@@ -189,7 +195,7 @@ pub fn load(args: Args) -> Result<Config> {
         username,
         password,
         threads,
-        device: args.device.or(file.device).unwrap_or_default(),
+        device,
         gpu_batch_size,
         nonce_offset: file.nonce_offset.unwrap_or(32),
         nonce_size,

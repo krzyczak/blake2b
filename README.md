@@ -23,9 +23,9 @@ Edit `config.yaml`:
 stratum_url: "stratum+tcp://pool.acme.com:5575"
 username: "wallet.worker"
 password: "x"
-threads: 0 # all logical CPUs
+threads: 0 # automatic; in both mode, leaves two logical CPUs for Metal
 device: both # cpu, gpu, or both
-gpu_batch_size: 1048576
+gpu_batch_size: 16777216
 
 # Used by --normal. --sia and --datum use fixed 80-byte layouts.
 nonce_offset: 32
@@ -123,6 +123,13 @@ Run a three-second local benchmark without connecting to a pool:
 ```sh
 target/release/blake2b-apple-miner --sia --benchmark --device both
 ```
+
+The Sia/DATUM Metal path uses a fixed-layout kernel with 32-bit pairs for
+BLAKE2b's 64-bit ARX operations. It verifies itself against the CPU reference
+at startup. On the 20-GPU-core M4 Pro used for development, the default
+16,777,216-nonce batch measured about 0.96 GH/s GPU-only, 0.225 GH/s CPU-only
+with 12 threads, and 1.18-1.19 GH/s in `both` mode. Smaller batches react to new
+jobs sooner but spend more time on Metal command-buffer overhead.
 
 ## Normal-mode wire format
 

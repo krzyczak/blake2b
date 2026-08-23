@@ -28,6 +28,7 @@ const STALE_CHECK_INTERVAL: u64 = 1_024;
 struct Work {
     spec: JobSpec,
     prepared: PreparedBlock,
+    target_words: [u64; 4],
     epoch: u64,
     next_nonce: AtomicU64,
 }
@@ -41,9 +42,11 @@ impl Work {
             spec.nonce_order == ByteOrder::Little,
         )
         .context("job cannot be prepared for one-block SIMD hashing")?;
+        let target_words = spec.target.words_be();
         Ok(Self {
             spec,
             prepared,
+            target_words,
             epoch,
             next_nonce: AtomicU64::new(0),
         })
@@ -97,9 +100,10 @@ pub fn run(config: Config) -> Result<()> {
         .context("install Ctrl-C handler")?;
 
     let gpu_backend = if config.device.uses_gpu() {
-        let backend = gpu::Miner::new(config.gpu_batch_size)?;
+        let mut backend = gpu::Miner::new(config.gpu_batch_size)?;
+        backend.verify_sia_kernel()?;
         eprintln!(
-            "Metal GPU: {} batch_size={}",
+            "Metal GPU: {} batch_size={} self_test=passed",
             backend.device_name(),
             backend.batch_size()
         );
@@ -230,14 +234,14 @@ fn worker_loop(context: WorkerContext) {
                 break;
             }
             let nonce = start.wrapping_add(offset);
-            let digests = work.prepared.hash4(nonce);
+            let hashes = work.prepared.hash4_words(nonce);
             pending_hashes += 4;
-            for (lane, digest) in digests.iter().enumerate() {
-                if work.spec.target.accepts(digest, work.spec.hash_order) {
+            for lane in 0..4 {
+                if accepts_hash_words(hashes.words(lane), work.target_words, work.spec.hash_order) {
                     let _ = context.shares.send(Share {
                         work: Arc::clone(&work),
                         nonce: nonce.wrapping_add(lane as u64),
-                        digest: *digest,
+                        digest: hashes.digest(lane),
                     });
                 }
             }
@@ -248,6 +252,23 @@ fn worker_loop(context: WorkerContext) {
         }
     }
     flush_hashes(&context.hashes.cpu, &mut pending_hashes);
+}
+
+#[inline(always)]
+fn accepts_hash_words(hash: [u64; 4], target: [u64; 4], order: ByteOrder) -> bool {
+    for index in 0..4 {
+        let hash_word = match order {
+            ByteOrder::Big => hash[index].swap_bytes(),
+            ByteOrder::Little => hash[3 - index],
+        };
+        if hash_word < target[index] {
+            return true;
+        }
+        if hash_word > target[index] {
+            return false;
+        }
+    }
+    true
 }
 
 fn gpu_worker_loop(mut miner: gpu::Miner, context: &WorkerContext) -> Result<()> {
@@ -273,6 +294,9 @@ fn gpu_worker_loop(mut miner: gpu::Miner, context: &WorkerContext) -> Result<()>
         }
         for nonce in winning_nonces {
             let digest = work.prepared.hash4(nonce)[0];
+            if !work.spec.target.accepts(&digest, work.spec.hash_order) {
+                continue;
+            }
             let _ = context.shares.send(Share {
                 work: Arc::clone(&work),
                 nonce,
@@ -594,9 +618,10 @@ fn benchmark(config: &Config) -> Result<()> {
     let gpu_failed = Arc::new(AtomicBool::new(false));
     let (shares, _unused_receiver) = unbounded();
     let gpu_backend = if config.device.uses_gpu() {
-        let backend = gpu::Miner::new(config.gpu_batch_size)?;
+        let mut backend = gpu::Miner::new(config.gpu_batch_size)?;
+        backend.verify_sia_kernel()?;
         eprintln!(
-            "Metal GPU: {} batch_size={}",
+            "Metal GPU: {} batch_size={} self_test=passed",
             backend.device_name(),
             backend.batch_size()
         );
@@ -640,4 +665,38 @@ fn benchmark(config: &Config) -> Result<()> {
         config.device,
     );
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn native_word_target_check_matches_digest_check() {
+        let digests = [
+            [0u8; 32],
+            [0xffu8; 32],
+            std::array::from_fn(|index| (index * 7 + 3) as u8),
+        ];
+        for target in [
+            "00".to_owned(),
+            "00000000ffff".to_owned(),
+            "7f".repeat(32),
+            "ff".repeat(32),
+        ] {
+            let target = Target::from_hex(&target).unwrap();
+            let target_words = target.words_be();
+            for digest in digests {
+                let words = std::array::from_fn(|index| {
+                    u64::from_le_bytes(digest[index * 8..index * 8 + 8].try_into().unwrap())
+                });
+                for order in [ByteOrder::Big, ByteOrder::Little] {
+                    assert_eq!(
+                        accepts_hash_words(words, target_words, order),
+                        target.accepts(&digest, order)
+                    );
+                }
+            }
+        }
+    }
 }

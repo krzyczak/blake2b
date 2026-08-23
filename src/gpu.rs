@@ -9,6 +9,7 @@ const MAX_RESULTS: usize = 256;
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 pub struct Job {
     words: [u64; 16],
+    sia_midstate: [u64; 12],
     target: [u64; 4],
     input_len: u32,
     nonce_offset: u32,
@@ -39,8 +40,10 @@ impl Job {
         for (word, bytes) in words.iter_mut().zip(block.chunks_exact(8)) {
             *word = u64::from_le_bytes(bytes.try_into().unwrap());
         }
+        let sia_midstate = prepare_sia_midstate(&words);
         Ok(Self {
             words,
+            sia_midstate,
             target: spec.target.words_be(),
             input_len: spec.blob.len() as u32,
             nonce_offset: spec.nonce_offset as u32,
@@ -49,6 +52,53 @@ impl Job {
             hash_little_endian: spec.hash_order == ByteOrder::Little,
         })
     }
+
+    #[cfg(target_os = "macos")]
+    fn uses_sia_kernel(&self) -> bool {
+        self.input_len == 80
+            && self.nonce_offset == 32
+            && self.nonce_size == 8
+            && self.nonce_little_endian
+            && !self.hash_little_endian
+    }
+}
+
+fn prepare_sia_midstate(words: &[u64; 16]) -> [u64; 12] {
+    let mut v = [
+        0x6a09_e667_f2bd_c928,
+        0xbb67_ae85_84ca_a73b,
+        0x3c6e_f372_fe94_f82b,
+        0xa54f_f53a_5f1d_36f1,
+        0x510e_527f_ade6_82d1,
+        0x9b05_688c_2b3e_6c1f,
+        0x1f83_d9ab_fb41_bd6b,
+        0x5be0_cd19_137e_2179,
+        0x6a09_e667_f3bc_c908,
+        0xbb67_ae85_84ca_a73b,
+        0x3c6e_f372_fe94_f82b,
+        0xa54f_f53a_5f1d_36f1,
+        0x510e_527f_ade6_8281,
+        0x9b05_688c_2b3e_6c1f,
+        0xe07c_2654_04be_4294,
+        0x5be0_cd19_137e_2179,
+    ];
+    prepare_g(&mut v, 0, 4, 8, 12, words[0], words[1]);
+    prepare_g(&mut v, 1, 5, 9, 13, words[2], words[3]);
+    prepare_g(&mut v, 3, 7, 11, 15, words[6], words[7]);
+    [
+        v[0], v[4], v[8], v[12], v[1], v[5], v[9], v[13], v[3], v[7], v[11], v[15],
+    ]
+}
+
+fn prepare_g(v: &mut [u64; 16], a: usize, b: usize, c: usize, d: usize, x: u64, y: u64) {
+    v[a] = v[a].wrapping_add(v[b]).wrapping_add(x);
+    v[d] = (v[d] ^ v[a]).rotate_right(32);
+    v[c] = v[c].wrapping_add(v[d]);
+    v[b] = (v[b] ^ v[c]).rotate_right(24);
+    v[a] = v[a].wrapping_add(v[b]).wrapping_add(y);
+    v[d] = (v[d] ^ v[a]).rotate_right(16);
+    v[c] = v[c].wrapping_add(v[d]);
+    v[b] = (v[b] ^ v[c]).rotate_right(63);
 }
 
 #[cfg(target_os = "macos")]
@@ -63,6 +113,12 @@ mod imp {
     use objc::rc::autoreleasepool;
 
     use super::{Job, MAX_RESULTS};
+    use crate::{
+        config::ByteOrder,
+        hash::blake2b256,
+        protocol::{JobSpec, Submit},
+        target::Target,
+    };
 
     const SHADER: &str = include_str!("blake2b.metal");
 
@@ -77,12 +133,14 @@ mod imp {
         nonce_little_endian: u32,
         hash_little_endian: u32,
         max_results: u32,
+        sia_midstate: [u64; 12],
     }
 
     pub struct Miner {
         device_name: String,
         queue: CommandQueue,
-        pipeline: ComputePipelineState,
+        generic_pipeline: ComputePipelineState,
+        sia_pipeline: ComputePipelineState,
         job_buffer: Buffer,
         count_buffer: Buffer,
         result_buffer: Buffer,
@@ -93,15 +151,26 @@ mod imp {
         pub fn new(batch_size: u32) -> Result<Self> {
             let device = Device::system_default().context("no Metal GPU is available")?;
             let options = CompileOptions::new();
+            options.set_fast_math_enabled(true);
             let library = device
                 .new_library_with_source(SHADER, &options)
                 .map_err(|error| anyhow::anyhow!("compile Metal Blake2b kernel: {error}"))?;
-            let function = library
+            let generic_function = library
                 .get_function("blake2b_mine", None)
                 .map_err(|error| anyhow::anyhow!("load Metal Blake2b kernel: {error}"))?;
-            let pipeline = device
-                .new_compute_pipeline_state_with_function(&function)
+            let generic_pipeline = device
+                .new_compute_pipeline_state_with_function(&generic_function)
                 .map_err(|error| anyhow::anyhow!("create Metal compute pipeline: {error}"))?;
+            let sia_function = library
+                .get_function("blake2b_mine_sia", None)
+                .map_err(|error| {
+                    anyhow::anyhow!("load specialized Metal Blake2b kernel: {error}")
+                })?;
+            let sia_pipeline = device
+                .new_compute_pipeline_state_with_function(&sia_function)
+                .map_err(|error| {
+                    anyhow::anyhow!("create specialized Metal compute pipeline: {error}")
+                })?;
             let shared = MTLResourceOptions::StorageModeShared;
             let job_buffer = device.new_buffer(mem::size_of::<JobParams>() as u64, shared);
             let count_buffer = device.new_buffer(mem::size_of::<u32>() as u64, shared);
@@ -112,7 +181,8 @@ mod imp {
             Ok(Self {
                 device_name,
                 queue,
-                pipeline,
+                generic_pipeline,
+                sia_pipeline,
                 job_buffer,
                 count_buffer,
                 result_buffer,
@@ -129,10 +199,65 @@ mod imp {
         }
 
         pub fn mine(&mut self, job: &Job, start_nonce: u64) -> Result<Vec<u64>> {
-            autoreleasepool(|| self.mine_inner(job, start_nonce))
+            let batch_size = self.batch_size;
+            autoreleasepool(|| self.mine_inner(job, start_nonce, batch_size))
         }
 
-        fn mine_inner(&mut self, job: &Job, start_nonce: u64) -> Result<Vec<u64>> {
+        pub fn verify_sia_kernel(&mut self) -> Result<()> {
+            const VERIFY_HASHES: u32 = 1_024;
+            const START_NONCE: u64 = 10_000;
+
+            let blob = vec![0x5a; 80];
+            let mut hashes = (0..VERIFY_HASHES)
+                .map(|offset| {
+                    let nonce = START_NONCE + u64::from(offset);
+                    let mut input = blob.clone();
+                    input[32..40].copy_from_slice(&nonce.to_le_bytes());
+                    (nonce, blake2b256(&input))
+                })
+                .collect::<Vec<_>>();
+            hashes.sort_unstable_by_key(|(_, hash)| *hash);
+            let target = Target::from_hex(&hex::encode(hashes[31].1))?;
+            let spec = JobSpec {
+                id: "metal-self-test".to_owned(),
+                blob,
+                target: target.clone(),
+                network_target: None,
+                nonce_offset: 32,
+                nonce_size: 8,
+                nonce_order: ByteOrder::Little,
+                hash_order: ByteOrder::Big,
+                submit: Submit::Normal,
+            };
+            let job = Job::new(&spec)?;
+            let mut expected = hashes
+                .iter()
+                .filter_map(|(nonce, hash)| target.accepts(hash, ByteOrder::Big).then_some(*nonce))
+                .collect::<Vec<_>>();
+            let mut actual = autoreleasepool(|| self.mine_inner(&job, START_NONCE, VERIFY_HASHES))?;
+            actual.retain(|nonce| {
+                let mut input = spec.blob.clone();
+                input[32..40].copy_from_slice(&nonce.to_le_bytes());
+                target.accepts(&blake2b256(&input), ByteOrder::Big)
+            });
+            expected.sort_unstable();
+            actual.sort_unstable();
+            if actual != expected {
+                bail!(
+                    "specialized Metal kernel failed self-test: expected {} nonces, got {}",
+                    expected.len(),
+                    actual.len()
+                );
+            }
+            Ok(())
+        }
+
+        fn mine_inner(
+            &mut self,
+            job: &Job,
+            start_nonce: u64,
+            nonce_count: u32,
+        ) -> Result<Vec<u64>> {
             let params = JobParams {
                 words: job.words,
                 start_nonce,
@@ -143,6 +268,7 @@ mod imp {
                 nonce_little_endian: u32::from(job.nonce_little_endian),
                 hash_little_endian: u32::from(job.hash_little_endian),
                 max_results: MAX_RESULTS as u32,
+                sia_midstate: job.sia_midstate,
             };
             unsafe {
                 ptr::copy_nonoverlapping(
@@ -155,18 +281,22 @@ mod imp {
 
             let command_buffer = self.queue.new_command_buffer();
             let encoder = command_buffer.new_compute_command_encoder();
-            encoder.set_compute_pipeline_state(&self.pipeline);
+            let pipeline = if job.uses_sia_kernel() {
+                &self.sia_pipeline
+            } else {
+                &self.generic_pipeline
+            };
+            encoder.set_compute_pipeline_state(pipeline);
             encoder.set_buffer(0, Some(&self.job_buffer), 0);
             encoder.set_buffer(1, Some(&self.count_buffer), 0);
             encoder.set_buffer(2, Some(&self.result_buffer), 0);
-            let execution_width = self.pipeline.thread_execution_width();
-            let group_width = self
-                .pipeline
+            let execution_width = pipeline.thread_execution_width();
+            let group_width = pipeline
                 .max_total_threads_per_threadgroup()
-                .min(256)
+                .min(128)
                 .max(execution_width);
             encoder.dispatch_threads(
-                MTLSize::new(self.batch_size as u64, 1, 1),
+                MTLSize::new(nonce_count as u64, 1, 1),
                 MTLSize::new(group_width, 1, 1),
             );
             encoder.end_encoding();
@@ -183,7 +313,7 @@ mod imp {
             if count > MAX_RESULTS {
                 bail!(
                     "Metal result buffer overflow: {count} shares in one {}-nonce batch",
-                    self.batch_size
+                    nonce_count
                 );
             }
             let results = unsafe {
@@ -218,6 +348,10 @@ mod imp {
         pub fn mine(&mut self, _job: &Job, _start_nonce: u64) -> Result<Vec<u64>> {
             bail!("GPU mining requires macOS and Metal")
         }
+
+        pub fn verify_sia_kernel(&mut self) -> Result<()> {
+            bail!("GPU mining requires macOS and Metal")
+        }
     }
 }
 
@@ -238,9 +372,12 @@ mod tests {
 
     #[test]
     fn metal_matches_reference_for_sia_and_raw_layouts() {
-        let Ok(mut miner) = Miner::new(1_024) else {
-            eprintln!("skipping Metal test because no GPU is exposed");
-            return;
+        let mut miner = match Miner::new(1_024) {
+            Ok(miner) => miner,
+            Err(error) => {
+                eprintln!("skipping Metal test because no GPU is exposed: {error:#}");
+                return;
+            }
         };
 
         verify_layout(
