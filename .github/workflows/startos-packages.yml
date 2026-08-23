@@ -13,19 +13,77 @@ on:
           - bitcoin-bip110
           - datum-bip110
           - mempool-guide
+      architecture:
+        description: Architecture to build
+        required: true
+        default: both
+        type: choice
+        options:
+          - x86
+          - arm
+          - both
 
 permissions:
   contents: read
 
 jobs:
+  prepare-matrix:
+    name: Prepare build matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Select packages and architectures
+        id: matrix
+        shell: bash
+        env:
+          SELECTED_PACKAGE: ${{ inputs.package }}
+          SELECTED_ARCHITECTURE: ${{ inputs.architecture }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+
+          const builds = [
+            { package: 'bitcoin-bip110', target: 'x86', runner: 'ubuntu-latest' },
+            { package: 'bitcoin-bip110', target: 'arm', runner: 'ubuntu-24.04-arm' },
+            { package: 'datum-bip110', target: 'x86', runner: 'ubuntu-latest' },
+            { package: 'datum-bip110', target: 'arm', runner: 'ubuntu-24.04-arm' },
+            { package: 'mempool-guide', target: 'x86', runner: 'ubuntu-latest' },
+          ]
+
+          const selected = builds.filter(({ package: packageName, target }) => {
+            const packageMatches =
+              process.env.SELECTED_PACKAGE === 'all' ||
+              process.env.SELECTED_PACKAGE === packageName
+            const architectureMatches =
+              process.env.SELECTED_ARCHITECTURE === 'both' ||
+              process.env.SELECTED_ARCHITECTURE === target
+            return packageMatches && architectureMatches
+          })
+
+          if (selected.length === 0) {
+            throw new Error(
+              `No builds support package=${process.env.SELECTED_PACKAGE} ` +
+                `and architecture=${process.env.SELECTED_ARCHITECTURE}. ` +
+                'Mempool Guide currently supports x86 only.',
+            )
+          }
+
+          fs.appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            `matrix=${JSON.stringify(selected)}\n`,
+          )
+          NODE
+
   build:
     name: ${{ matrix.package }} (${{ matrix.target }})
+    needs: prepare-matrix
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 180
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(inputs.package == 'mempool-guide' && '[{"package":"mempool-guide","target":"x86","runner":"ubuntu-latest"}]' || inputs.package == 'bitcoin-bip110' && '[{"package":"bitcoin-bip110","target":"x86","runner":"ubuntu-latest"},{"package":"bitcoin-bip110","target":"arm","runner":"ubuntu-24.04-arm"}]' || inputs.package == 'datum-bip110' && '[{"package":"datum-bip110","target":"x86","runner":"ubuntu-latest"},{"package":"datum-bip110","target":"arm","runner":"ubuntu-24.04-arm"}]' || '[{"package":"bitcoin-bip110","target":"x86","runner":"ubuntu-latest"},{"package":"bitcoin-bip110","target":"arm","runner":"ubuntu-24.04-arm"},{"package":"datum-bip110","target":"x86","runner":"ubuntu-latest"},{"package":"datum-bip110","target":"arm","runner":"ubuntu-24.04-arm"},{"package":"mempool-guide","target":"x86","runner":"ubuntu-latest"}]') }}
+        include: ${{ fromJSON(needs.prepare-matrix.outputs.matrix) }}
 
     steps:
       - name: Free disk space for image builds
