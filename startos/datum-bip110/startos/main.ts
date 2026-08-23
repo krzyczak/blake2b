@@ -5,6 +5,7 @@ import {
   defaultCoinbaseTagSecondary,
   miningSettingsFile,
 } from './file-models/mining-settings.json'
+import { dashboardPasswordFile } from './file-models/dashboard-password'
 import {
   bitcoinPackageId,
   bitcoinRpcHostId,
@@ -14,6 +15,10 @@ import {
 
 export const main = sdk.setupMain(async ({ effects }) => {
   const miningSettings = await miningSettingsFile.read((value) => value).once()
+  const dashboardPassword = await dashboardPasswordFile.read().once()
+  if (!dashboardPassword) {
+    throw new Error('DATUM dashboard password is unavailable')
+  }
   const rpcAddress = await sdk.host
     .getBridgeAddress(effects, {
       packageId: bitcoinPackageId,
@@ -47,6 +52,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
           miningSettings?.coinbaseTagPrimary ?? defaultCoinbaseTagPrimary,
         DATUM_COINBASE_TAG_SECONDARY:
           miningSettings?.coinbaseTagSecondary ?? defaultCoinbaseTagSecondary,
+        DATUM_DASHBOARD_ADMIN_PASSWORD: dashboardPassword,
       },
       sigtermTimeout: 30_000,
     },

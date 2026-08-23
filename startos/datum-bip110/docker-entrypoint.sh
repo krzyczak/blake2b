@@ -10,6 +10,7 @@ BITCOIN_RPC_ADDRESS="$1"
 DATA_DIR=/data
 COINBASE_TAG_PRIMARY="${DATUM_COINBASE_TAG_PRIMARY:-Totoro}"
 COINBASE_TAG_SECONDARY="${DATUM_COINBASE_TAG_SECONDARY:-StartOS-BIP110}"
+DASHBOARD_ADMIN_PASSWORD="${DATUM_DASHBOARD_ADMIN_PASSWORD:?DATUM dashboard password is required}"
 
 mkdir -p "$DATA_DIR"
 umask 077
@@ -38,8 +39,10 @@ cat > "$DATA_DIR/config.json" <<EOF
     "pow_algorithm": "auto"
   },
   "api": {
-    "admin_password": "",
-    "listen_port": 0,
+    "admin_password": "${DASHBOARD_ADMIN_PASSWORD}",
+    "listen_addr": "0.0.0.0",
+    "listen_port": 7152,
+    "allow_insecure_auth": false,
     "modify_conf": false
   },
   "logger": {

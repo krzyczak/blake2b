@@ -18,4 +18,10 @@ in each solo-mined coinbase. Explorer branding remains registry-based: setting
 a tag makes it visible on-chain, while the public explorer operator must map
 that tag to a display name.
 
+The package exports DATUM's built-in monitoring dashboard on port 7152. It
+shows gateway, Stratum, share, client, hashrate, coinbaser, and job status.
+Configuration editing is disabled, and protected detail pages use a generated
+password stored in the backed-up package volume. Retrieve it with the
+**Dashboard Credentials** StartOS action.
+
 Supported StartOS architectures: x86_64 and aarch64.

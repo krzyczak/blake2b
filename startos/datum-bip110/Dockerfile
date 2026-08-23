@@ -44,6 +44,6 @@ COPY docker-entrypoint.sh /usr/local/bin/datum-bip110-entrypoint
 
 RUN chmod 0755 /usr/local/bin/datum-bip110-entrypoint
 
-EXPOSE 23334/tcp
+EXPOSE 23334/tcp 7152/tcp
 
 ENTRYPOINT ["/usr/local/bin/datum-bip110-entrypoint"]

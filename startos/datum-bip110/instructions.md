@@ -19,6 +19,13 @@ target/release/blake2b-apple-miner \
 Replace the example address with the exact non-SSL address StartOS displays;
 the external port may differ when port 23334 is already allocated.
 
+Open the **Monitoring Dashboard** interface for DATUM status, estimated
+hashrate, accepted and rejected shares, connected clients, and the current
+Stratum job. The status page is read-only. Protected detail pages use HTTP
+digest authentication; retrieve the generated `admin` credentials from
+**Actions → Dashboard Credentials**. Dashboard configuration editing remains
+disabled because StartOS owns the service configuration.
+
 Use **Actions → Set Mining Identity** to change the primary and secondary
 coinbase tags. For example, set the primary tag to `/MyMiner/` and the
 secondary tag to `Totoro`. The gateway restarts and embeds those strings in

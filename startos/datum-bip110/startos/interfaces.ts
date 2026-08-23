@@ -1,6 +1,11 @@
 import { i18n } from './i18n'
 import { sdk } from './sdk'
-import { stratumHostId, stratumPort } from './utils'
+import {
+  dashboardHostId,
+  dashboardPort,
+  stratumHostId,
+  stratumPort,
+} from './utils'
 
 export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
   const stratumMulti = sdk.MultiHost.of(effects, stratumHostId)
@@ -21,6 +26,26 @@ export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
     path: '',
     query: {},
   })
+  const dashboardMulti = sdk.MultiHost.of(effects, dashboardHostId)
+  const dashboardOrigin = await dashboardMulti.bindPort(dashboardPort, {
+    protocol: 'http',
+  })
+  const dashboard = sdk.createInterface(effects, {
+    name: i18n('Monitoring Dashboard'),
+    id: 'dashboard',
+    description: i18n(
+      'DATUM status, hashrate, share, client, and job monitoring.',
+    ),
+    type: 'ui',
+    masked: false,
+    schemeOverride: null,
+    username: 'admin',
+    path: '',
+    query: {},
+  })
 
-  return [await stratumOrigin.export([stratum])]
+  return [
+    await stratumOrigin.export([stratum]),
+    await dashboardOrigin.export([dashboard]),
+  ]
 })
