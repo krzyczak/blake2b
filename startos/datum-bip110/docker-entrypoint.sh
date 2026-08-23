@@ -10,6 +10,7 @@ BITCOIN_RPC_ADDRESS="$1"
 DATA_DIR=/data
 COINBASE_TAG_PRIMARY="${DATUM_COINBASE_TAG_PRIMARY:-Totoro}"
 COINBASE_TAG_SECONDARY="${DATUM_COINBASE_TAG_SECONDARY:-StartOS-BIP110}"
+POOL_ADDRESS="${DATUM_POOL_ADDRESS:-mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn}"
 DASHBOARD_ADMIN_PASSWORD="${DATUM_DASHBOARD_ADMIN_PASSWORD:?DATUM dashboard password is required}"
 
 mkdir -p "$DATA_DIR"
@@ -32,7 +33,7 @@ cat > "$DATA_DIR/config.json" <<EOF
     "share_stale_seconds": 120
   },
   "mining": {
-    "pool_address": "mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn",
+    "pool_address": "${POOL_ADDRESS}",
     "coinbase_tag_primary": "${COINBASE_TAG_PRIMARY}",
     "coinbase_tag_secondary": "${COINBASE_TAG_SECONDARY}",
     "coinbase_unique_id": 4242,

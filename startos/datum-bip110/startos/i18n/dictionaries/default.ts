@@ -25,6 +25,12 @@ const dict = {
   Password: 21,
   'Monitoring Dashboard': 22,
   'DATUM status, hashrate, share, client, and job monitoring.': 23,
+  'Enter a supported Bitcoin or Testnet address beginning with 1, 3, m, n, 2, bc1, or tb1.': 24,
+  'Solo Payout Address': 25,
+  'The entire block subsidy and transaction fees are paid to this address when this gateway mines without an upstream DATUM pool.': 26,
+  'Set Solo Payout Address': 27,
+  'Configure the address written into solo-mined coinbase transaction outputs.': 28,
+  'Use an address for the selected node network whose private key you control. A wrong-network or unowned address can make a mined reward inaccessible.': 29,
 } as const
 
 export type I18nKey = keyof typeof dict

@@ -3,6 +3,7 @@ import { sdk } from './sdk'
 import {
   defaultCoinbaseTagPrimary,
   defaultCoinbaseTagSecondary,
+  defaultPayoutAddress,
   miningSettingsFile,
 } from './file-models/mining-settings.json'
 import { dashboardPasswordFile } from './file-models/dashboard-password'
@@ -52,6 +53,8 @@ export const main = sdk.setupMain(async ({ effects }) => {
           miningSettings?.coinbaseTagPrimary ?? defaultCoinbaseTagPrimary,
         DATUM_COINBASE_TAG_SECONDARY:
           miningSettings?.coinbaseTagSecondary ?? defaultCoinbaseTagSecondary,
+        DATUM_POOL_ADDRESS:
+          miningSettings?.payoutAddress ?? defaultPayoutAddress,
         DATUM_DASHBOARD_ADMIN_PASSWORD: dashboardPassword,
       },
       sigtermTimeout: 30_000,

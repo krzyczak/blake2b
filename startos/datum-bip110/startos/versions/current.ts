@@ -1,10 +1,10 @@
 import { IMPOSSIBLE, VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '0.1.0:4',
+  version: '0.1.0:5',
   releaseNotes: {
     en_US:
-      'Add the DATUM monitoring dashboard with persistent, generated StartOS credentials.',
+      'Add a persistent, configurable solo-mining payout address and retain the DATUM monitoring dashboard.',
   },
   migrations: {
     up: async () => {},

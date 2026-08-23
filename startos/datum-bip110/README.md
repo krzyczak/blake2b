@@ -18,6 +18,11 @@ in each solo-mined coinbase. Explorer branding remains registry-based: setting
 a tag makes it visible on-chain, while the public explorer operator must map
 that tag to a display name.
 
+The **Set Solo Payout Address** action persists the address used for the
+coinbase transaction output while no upstream DATUM pool is configured. The
+gateway restarts after a change. Use a Bitcoin address appropriate for the
+selected node network whose private key you control.
+
 The package exports DATUM's built-in monitoring dashboard on port 7152. It
 shows gateway, Stratum, share, client, hashrate, coinbaser, and job status.
 Configuration editing is disabled, and protected detail pages use a generated
