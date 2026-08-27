@@ -75,8 +75,8 @@ Normal mode hashes a raw Blake2b-256 blob with the nonce layout from YAML:
 target/release/blake2b-apple-miner --normal
 ```
 
-The current Justin Filip DATUM fork exposes BIP-110 work using the Sia-style
-layout, so connect to the StartOS DATUM package using `--sia`:
+The pinned Maveth DATUM fork exposes BIP-110 work using the Sia-style layout by
+default, so connect to the StartOS DATUM package using `--sia`:
 
 ```sh
 target/release/blake2b-apple-miner \
@@ -87,10 +87,9 @@ target/release/blake2b-apple-miner \
   --password=x
 ```
 
-DATUM mode remains compatible with the older experimental precomputed-mid
-dialect from Maveth's `bip110-pow-v2` branch. It hashes the gateway's direct
-80-byte ASIC input and submits the fixed zero `extranonce2` required by that
-lab protocol:
+DATUM mode remains compatible with the branch's opt-in experimental
+precomputed-mid dialect. It hashes the gateway's direct 80-byte ASIC input and
+submits the fixed zero `extranonce2` required by that lab protocol:
 
 ```sh
 target/release/blake2b-apple-miner \

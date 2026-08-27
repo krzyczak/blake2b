@@ -1,8 +1,8 @@
 # Bitcoin Knots BIP110 for StartOS
 
 Experimental StartOS package pinned to Bitcoin Knots tag
-`v29.4.1.knots20260508rc2`, peeled commit
-`c25ad6bcd18fa65cd78f176a52be062411507741`, and a verified source-tarball
+`v29.4.1.knots20260508rc3`, peeled commit
+`afbe91c299e16519f03902939fdbda8af9bd527d`, and a verified source-tarball
 SHA-256.
 
 Use the **Select Network** action to choose one of four modes:
@@ -11,8 +11,10 @@ Use the **Select Network** action to choose one of four modes:
   `/data` datadir, creates 19 validated SHA256d regtest blocks, and leaves the
   BLAKE2b activation block at height 20 for the external miner. Its private
   headline remains `BIP110-LAB` for compatibility with existing dummy chains.
-- `testnet4` joins and validates the public testnet4 chain. RC2 activates
-  BLAKE2b at height 149537 and uses `blake2b_headline=Totoro`.
+- `testnet4` joins and validates the public testnet4 chain. RC3 activates
+  BLAKE2b at height 150027. The package defaults to
+  `blake2b_headline=Totoro`; use the per-network action if the RC3 test
+  announcement specifies a different exact headline.
 - `signet` joins the public default signet. Its blocks additionally require an
   authorized signet block signature, so this BLAKE2b miner cannot mine public
   signet by itself.

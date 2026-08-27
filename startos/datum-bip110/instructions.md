@@ -22,7 +22,7 @@ the external port may differ when port 23334 is already allocated.
 Open the **Monitoring Dashboard** interface for DATUM status, estimated
 hashrate, accepted and rejected shares, connected clients, and the current
 Stratum job. The status page is read-only. Protected detail pages use HTTP
-digest authentication; retrieve the generated `admin` credentials from
+Basic authentication; retrieve the generated `admin` credentials from
 **Actions → Dashboard Credentials**. Dashboard configuration editing remains
 disabled because StartOS owns the service configuration.
 
@@ -39,10 +39,8 @@ new solo-mined coinbase transactions. This is independent of the Knots
 
 Use **Actions → Set Solo Payout Address** to replace the disposable default
 address with an address whose private key you control. For Testnet4 use a
-Testnet address, normally beginning with `m`, `n`, `2`, or `tb1`. DATUM's
-dashboard currently renders output scripts with Mainnet address prefixes, so
-the Coinbaser page may show a corresponding `1`, `3`, or `bc1` address even
-though the underlying Testnet4 payout script is correct.
+Testnet address, normally beginning with `m`, `n`, `2`, or `tb1`. This Maveth
+revision renders those Testnet prefixes correctly in the dashboard.
 
 Mempool explorers identify miners by matching coinbase tags or payout
 addresses against their own pool registry. Your tag will be visible in the raw
@@ -59,6 +57,6 @@ In testnet4 mode, an accepted block belongs to the public chain and can be
 viewed at `https://mempool.guide/testnet4`. The payout key is not included in
 this package and test coins have no monetary value.
 
-`--datum` is retained in the Apple miner only for the older Maveth lab-mid
-dialect. Justin Filip's current gateway sends canonical Sia-style jobs, so use
-`--sia` with this StartOS package.
+`--datum` is retained in the Apple miner for Maveth's opt-in lab-mid dialect.
+The gateway sends canonical Sia-style jobs by default, so use `--sia` with
+this StartOS package.

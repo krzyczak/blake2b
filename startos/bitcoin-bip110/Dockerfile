@@ -1,7 +1,7 @@
 FROM debian:bookworm-slim AS builder
 
-ARG BITCOIN_COMMIT=c25ad6bcd18fa65cd78f176a52be062411507741
-ARG BITCOIN_TARBALL_SHA256=4b7ac71af9e8989bc8882d44edcd51fa1bf200d375a5996109d72fe74dc8ecfe
+ARG BITCOIN_COMMIT=afbe91c299e16519f03902939fdbda8af9bd527d
+ARG BITCOIN_TARBALL_SHA256=2758d73bb5a0ec9d8dcf8b808dd738c83699f6da1f5b20825c900ef3646c076d
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \

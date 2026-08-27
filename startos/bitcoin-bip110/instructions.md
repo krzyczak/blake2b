@@ -1,7 +1,7 @@
 # Bitcoin Knots BIP110
 
 This experimental package runs Bitcoin Knots
-`v29.4.1.knots20260508rc2`. Open **Actions → Select Network** to choose the
+`v29.4.1.knots20260508rc3`. Open **Actions → Select Network** to choose the
 chain:
 
 - **Isolated dummy regtest** is the default and preserves the original lab.
@@ -16,10 +16,10 @@ chain:
   canonical public network to synchronize with.
 
 After selecting a network, **Actions → Set BLAKE2b Headline** shows its current
-value and lets you store a separate override for that network. RC2 defaults to
-`Totoro` on testnet4 and `BIP110-LAB` in dummy mode. Change it only when the
-Knots release instructions publish a new exact value: the setting is
-consensus-critical at the BLAKE2b activation block.
+value and lets you store a separate override for that network. The package
+defaults to `Totoro` on testnet4 and `BIP110-LAB` in dummy mode. Change it only
+when the Knots RC3 test announcement publishes a different exact value: the
+setting is consensus-critical at the BLAKE2b activation block.
 
 Each mode keeps separate chain data. Public networks use a pruned, fully
 validated IBD; there is no safe fake-IBD shortcut for producing blocks that

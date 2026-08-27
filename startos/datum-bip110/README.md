@@ -1,16 +1,21 @@
 # DATUM BIP110 Gateway for StartOS
 
-Experimental StartOS wrapper for Justin Filip's integrated BLAKE2b DATUM
-Gateway fork, pinned to commit
-`56c31f40c83c3c8315694617082456677799e43a` and its verified source tarball
-hash.
+Experimental StartOS wrapper for Maveth's BLAKE2b DATUM Gateway branch, pinned
+to commit `e82d7e5422cb3e425ab7f9d9cbe230b1bc7a2f11` and its verified source
+tarball hash. This branch contains InnerHat's current BLAKE2b implementation
+and adds the test-lab activation-headline and low-height regtest fixes.
 
 The service requires the companion `bitcoin-bip110` package. It discovers the
 node's StartOS bridge address at runtime and exports Sia-style BLAKE2b Stratum
-on raw TCP. This revision negotiates the RC2 `blake2b` template rule, supports
-the canonical header-v2 layout, and validates/submits BLAKE2b work. Use the
-Apple miner's `--sia` mode with this package. No remote DATUM pool is
-configured.
+on raw TCP. This revision negotiates the RC3 `blake2b` template rule, supports
+the canonical header-v2 layout, copies the activation headline from
+`getblocktemplate` into the activation coinbase, and validates/submits
+BLAKE2b work. Use the Apple miner's `--sia` mode with this package. No remote
+DATUM pool is configured.
+
+Maveth can fetch a DATUM pool public key when an external pool host is enabled.
+This package deliberately leaves the pool host empty, so pool initialization
+returns before that fetch path and mining remains local/solo.
 
 The **Set Mining Identity** StartOS action persists validated primary and
 secondary coinbase tags and restarts the gateway. These strings are embedded
