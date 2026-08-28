@@ -26,9 +26,12 @@ RUN curl --fail --location --silent --show-error \
     && rm /tmp/datum.tar.gz
 
 COPY browser-auth-compat.patch /tmp/browser-auth-compat.patch
+COPY best-share.patch /tmp/best-share.patch
+COPY dashboard/home.html /src/www/home.html
 
 RUN patch --directory=/src --strip=1 --input=/tmp/browser-auth-compat.patch \
-    && rm /tmp/browser-auth-compat.patch
+    && patch --directory=/src --strip=1 --input=/tmp/best-share.patch \
+    && rm /tmp/browser-auth-compat.patch /tmp/best-share.patch
 
 RUN cmake -S /src -B /build -DCMAKE_BUILD_TYPE=Release \
     && cmake --build /build --parallel

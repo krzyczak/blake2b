@@ -28,11 +28,20 @@ coinbase transaction output while no upstream DATUM pool is configured. The
 gateway restarts after a change. Use a Bitcoin address appropriate for the
 selected node network whose private key you control.
 
-The package exports DATUM's built-in monitoring dashboard on port 7152. It
-shows gateway, Stratum, share, client, hashrate, coinbaser, and job status.
-Configuration editing is disabled, and protected detail pages use a generated
-password stored in the backed-up package volume. Retrieve it with the
-**Dashboard Credentials** StartOS action.
+The package exports a live pyblock-inspired monitoring dashboard on port 7152.
+It reads DATUM's in-process gateway, Stratum, share, hashrate, identity, and
+current-job values, refreshes them every five seconds, and keeps a short
+browser-session hashrate chart and activity feed. No external service or
+telemetry is involved. Configuration editing is disabled, and protected detail
+pages use a generated password stored in the backed-up package volume. Retrieve
+it with the **Dashboard Credentials** StartOS action.
+
+DATUM also calculates the actual difficulty of every locally accepted share.
+The dashboard shows the best share since the gateway process started and the
+best share for each current client connection; the same data is available as
+JSON at `/api/best-shares`. Client bests reset on reconnect and the global best
+resets when DATUM restarts. This is intentionally separate from accumulated
+difficulty, which sums the assigned difficulty credited for accepted work.
 
 For browser interoperability, protected pages use HTTP Basic authentication
 through the StartOS HTTPS interface. The generated password is long and

@@ -1,0 +1,193 @@
+diff --git a/src/datum_api.c b/src/datum_api.c
+index cb16167..b3a13d8 100644
+--- a/src/datum_api.c
++++ b/src/datum_api.c
+@@ -75,6 +75,9 @@ const char *cbnames[] = {
+ 
+ typedef struct MHD_Response *(*create_response_func_t)();
+ 
++int datum_api_submit_uncached_response(struct MHD_Connection *connection, unsigned int status_code, struct MHD_Response *response);
++int datum_api_do_error(struct MHD_Connection *connection, unsigned int status_code);
++
+ static struct MHD_Response *datum_api_create_empty_mhd_response() {
+ 	return MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT);
+ }
+@@ -105,6 +108,65 @@ void datum_api_var_STRATUM_SHARES_REJECTED(char *buffer, size_t buffer_size, con
+ 		__atomic_load_n(&stratum_client_rejected_share_count, __ATOMIC_RELAXED),
+ 		__atomic_load_n(&stratum_client_rejected_share_diff, __ATOMIC_RELAXED));
+ }
++
++static json_t *datum_api_json_u64(uint64_t value) {
++	if (value <= INT64_MAX) return json_integer((json_int_t)value);
++	return json_real((double)value);
++}
++
++static int datum_api_best_shares(struct MHD_Connection *connection) {
++	json_t *root = json_object();
++	json_t *clients = json_array();
++	char client_id[32];
++
++	if (!root || !clients) {
++		json_decref(root);
++		json_decref(clients);
++		return datum_api_do_error(connection, MHD_HTTP_INTERNAL_SERVER_ERROR);
++	}
++
++	json_object_set_new(root, "global_best", datum_api_json_u64(
++		__atomic_load_n(&stratum_client_best_share_diff, __ATOMIC_RELAXED)));
++	json_object_set_new(root, "clients", clients);
++
++	if (global_stratum_app) {
++		for (int tid = 0; tid < global_stratum_app->max_threads; ++tid) {
++			for (int cid = 0; cid < global_stratum_app->max_clients_thread; ++cid) {
++				T_DATUM_CLIENT_DATA *client = &global_stratum_app->datum_threads[tid].client_data[cid];
++				if (client->fd <= 0) continue;
++
++				T_DATUM_MINER_DATA *m = client->app_client_data;
++				json_t *item = json_object();
++				if (!item) continue;
++
++				snprintf(client_id, sizeof(client_id), "%d/%d", tid, cid);
++				json_object_set_new(item, "id", json_string(client_id));
++				json_object_set_new(item, "remote_host", json_string(client->rem_host));
++				json_object_set_new(item, "username", json_string(m->last_auth_username));
++				json_object_set_new(item, "useragent", json_string(m->useragent));
++				json_object_set_new(item, "subscribed", json_boolean(m->subscribed));
++				json_object_set_new(item, "best_share", datum_api_json_u64(
++					__atomic_load_n(&m->best_share_diff, __ATOMIC_RELAXED)));
++				json_object_set_new(item, "accepted", datum_api_json_u64(m->share_count_accepted));
++				json_object_set_new(item, "accepted_diff", datum_api_json_u64(m->share_diff_accepted));
++				json_array_append_new(clients, item);
++			}
++		}
++	}
++
++	char *output = json_dumps(root, JSON_COMPACT);
++	json_decref(root);
++	if (!output) return datum_api_do_error(connection, MHD_HTTP_INTERNAL_SERVER_ERROR);
++
++	struct MHD_Response *response = MHD_create_response_from_buffer(strlen(output), output, MHD_RESPMEM_MUST_FREE);
++	if (!response) {
++		free(output);
++		return MHD_NO;
++	}
++	MHD_add_response_header(response, "Content-Type", "application/json");
++	return datum_api_submit_uncached_response(connection, MHD_HTTP_OK, response);
++}
++
+ void datum_api_var_DATUM_SHARES_ACCEPTED(char *buffer, size_t buffer_size, const T_DATUM_API_DASH_VARS *vardata) {
+ 	(void)vardata;
+ 	if (!datum_config.datum_pool_host[0]) {
+@@ -918,7 +980,7 @@ int datum_api_client_dashboard(struct MHD_Connection *connection) {
+ 		return MHD_YES;
+ 	}
+ 	
+-	sz += snprintf(&output[sz], max_sz-1-sz, "<form action='/cmd' method='post'><input type='hidden' name='csrf' value='%s' /><TABLE><TR><TD><U>TID/CID</U></TD>  <TD><U>RemHost</U></TD>  <TD><U>Auth Username</U></TD> <TD><U>Subbed</U></TD> <TD><U>Last Accepted</U></TD> <TD><U>VDiff</U></TD> <TD><U>DiffA (A)</U></TD> <TD><U>DiffR (R)</U></TD> <TD><U>Hashrate (age)</U></TD> <TD><U>Coinbase</U></TD> <TD><U>UserAgent</U> </TD><TD><U>Command</U></TD></TR>", datum_config.api_csrf_token);
++	sz += snprintf(&output[sz], max_sz-1-sz, "<form action='/cmd' method='post'><input type='hidden' name='csrf' value='%s' /><TABLE><TR><TD><U>TID/CID</U></TD>  <TD><U>RemHost</U></TD>  <TD><U>Auth Username</U></TD> <TD><U>Subbed</U></TD> <TD><U>Last Accepted</U></TD> <TD><U>VDiff</U></TD> <TD><U>DiffA (A)</U></TD> <TD><U>Best Share</U></TD> <TD><U>DiffR (R)</U></TD> <TD><U>Hashrate (age)</U></TD> <TD><U>Coinbase</U></TD> <TD><U>UserAgent</U> </TD><TD><U>Command</U></TD></TR>", datum_config.api_csrf_token);
+ 	
+ 	for (j = 0; j < max_threads; ++j) {
+ 		for(ii=0;ii<global_stratum_app->max_clients_thread;ii++) {
+@@ -943,6 +1005,7 @@ int datum_api_client_dashboard(struct MHD_Connection *connection) {
+ 					
+ 					sz += snprintf(&output[sz], max_sz-1-sz, "<TD>%"PRIu64"</TD>", m->current_diff);
+ 					sz += snprintf(&output[sz], max_sz-1-sz, "<TD>%"PRIu64" (%"PRIu64")</TD>", m->share_diff_accepted, m->share_count_accepted);
++					sz += snprintf(&output[sz], max_sz-1-sz, "<TD>%"PRIu64"</TD>", __atomic_load_n(&m->best_share_diff, __ATOMIC_RELAXED));
+ 					
+ 					hr = 0.0;
+ 					if (m->share_diff_accepted > 0) {
+@@ -974,7 +1037,7 @@ int datum_api_client_dashboard(struct MHD_Connection *connection) {
+ 					sz += strncpy_html_escape(&output[sz], m->useragent, max_sz-1-sz);
+ 					sz += snprintf(&output[sz], max_sz-1-sz, "</TD>");
+ 				} else {
+-					sz += snprintf(&output[sz], max_sz-1-sz, "<TD COLSPAN=\"8\">Not Subscribed</TD>");
++					sz += snprintf(&output[sz], max_sz-1-sz, "<TD COLSPAN=\"9\">Not Subscribed</TD>");
+ 				}
+ 				
+ 				sz += snprintf(&output[sz], max_sz-1-sz, "<TD><button name='kill_client' value='%d_%d_%lu_%lu' onclick=\"sendPostRequest('/cmd', {cmd:'kill_client',tid:%d,cid:%d,t:%lu,id:%lu}); return false;\">Kick</button></TD></TR>", j, ii, (unsigned long)m->connect_tsms, (unsigned long)m->unique_id, j, ii, (unsigned long)m->connect_tsms, (unsigned long)m->unique_id);
+@@ -1813,6 +1876,9 @@ enum MHD_Result datum_api_answer(void *cls, struct MHD_Connection *connection, c
+ 		}
+ 		
+ 		case 'a': {
++			if (int_method == 1 && !strcmp(url, "/api/best-shares")) {
++				return datum_api_best_shares(connection);
++			}
+ 			if (!strcmp(url, "/assets/icons/datum_logo.svg")) {
+ 				return datum_api_asset(connection, "image/svg+xml", www_assets_icons_datum_logo_svg, www_assets_icons_datum_logo_svg_sz, www_assets_icons_datum_logo_svg_etag);
+ 			} else if (!strcmp(url, "/assets/icons/favicon.ico")) {
+diff --git a/src/datum_stratum.c b/src/datum_stratum.c
+index 04e9074..16c785c 100644
+--- a/src/datum_stratum.c
++++ b/src/datum_stratum.c
+@@ -82,6 +82,7 @@ bool need_coinbaser_rwlocks_init_done = false;
+ 
+ uint64_t stratum_client_accepted_share_count = 0;
+ uint64_t stratum_client_accepted_share_diff = 0;
++uint64_t stratum_client_best_share_diff = 0;
+ uint64_t stratum_client_rejected_share_count = 0;
+ uint64_t stratum_client_rejected_share_diff = 0;
+ 
+@@ -960,6 +961,36 @@ static bool stratum_job_is_blake2b(const T_DATUM_STRATUM_JOB *j) {
+ 	return j && j->block_template && j->block_template->header_version >= 2;
+ }
+ 
++static uint64_t stratum_share_difficulty(const uint8_t share_hash[32]) {
++	long double hash_value = 0.0L;
++	long double difficulty;
++	int i;
++
++	// Hashes and targets are stored least-significant byte first.  The
++	// difficulty-1 target is 0x00000000ffff0000... in the same 256-bit space.
++	for (i = 31; i >= 0; --i) {
++		hash_value = (hash_value * 256.0L) + (long double)share_hash[i];
++	}
++	if (hash_value == 0.0L) return UINT64_MAX;
++
++	difficulty = (65535.0L * 0x1p208L) / hash_value;
++	if (difficulty >= (long double)UINT64_MAX) return UINT64_MAX;
++	if (difficulty < 0.5L) return 0;
++	return (uint64_t)(difficulty + 0.5L);
++}
++
++static void stratum_atomic_max_u64(uint64_t *value, uint64_t candidate) {
++	uint64_t current = __atomic_load_n(value, __ATOMIC_RELAXED);
++	while (candidate > current &&
++	       !__atomic_compare_exchange_n(value, &current, candidate, false, __ATOMIC_RELAXED, __ATOMIC_RELAXED)) {}
++}
++
++static void stratum_note_best_share(T_DATUM_MINER_DATA *m, const uint8_t share_hash[32]) {
++	const uint64_t difficulty = stratum_share_difficulty(share_hash);
++	stratum_atomic_max_u64(&m->best_share_diff, difficulty);
++	stratum_atomic_max_u64(&stratum_client_best_share_diff, difficulty);
++}
++
+ static void stratum_note_share(T_DATUM_MINER_DATA *m, bool accepted, uint64_t diff) {
+ 	if (accepted) {
+ 		m->share_count_accepted++;
+@@ -1448,6 +1479,7 @@ int client_mining_submit(T_DATUM_CLIENT_DATA *c, uint64_t id, json_t *params_obj
+ 	stratum_rpc_id_clear(c);
+ 	
+ 	// update connection and gateway-local totals
++	stratum_note_best_share(m, share_hash);
+ 	stratum_note_share(m, true, job_diff);
+ 	
+ 	// update since-snap totals
+diff --git a/src/datum_stratum.h b/src/datum_stratum.h
+index cc26979..c3d255a 100644
+--- a/src/datum_stratum.h
++++ b/src/datum_stratum.h
+@@ -243,6 +243,7 @@ typedef struct {
+ 	
+ 	uint64_t share_diff_accepted;
+ 	uint64_t share_count_accepted;
++	uint64_t best_share_diff;
+ 	
+ 	uint64_t share_diff_rejected;
+ 	uint64_t share_count_rejected;
+@@ -304,6 +305,7 @@ extern bool need_coinbaser_rwlocks_init_done;
+ // Gateway-local share totals from connected stratum miners (not pool responses)
+ extern uint64_t stratum_client_accepted_share_count;
+ extern uint64_t stratum_client_accepted_share_diff;
++extern uint64_t stratum_client_best_share_diff;
+ extern uint64_t stratum_client_rejected_share_count;
+ extern uint64_t stratum_client_rejected_share_diff;
+ 

@@ -19,12 +19,14 @@ target/release/blake2b-apple-miner \
 Replace the example address with the exact non-SSL address StartOS displays;
 the external port may differ when port 23334 is already allocated.
 
-Open the **Monitoring Dashboard** interface for DATUM status, estimated
-hashrate, accepted and rejected shares, connected clients, and the current
-Stratum job. The status page is read-only. Protected detail pages use HTTP
-Basic authentication; retrieve the generated `admin` credentials from
-**Actions → Dashboard Credentials**. Dashboard configuration editing remains
-disabled because StartOS owns the service configuration.
+Open the **Monitoring Dashboard** interface for a live view of DATUM status,
+estimated hashrate, accepted and rejected shares, connected clients, and the
+current Stratum job. The status page refreshes every five seconds and keeps its
+hashrate chart and activity feed only in the current browser tab. It is
+read-only and sends no telemetry. Protected detail pages use HTTP Basic
+authentication; retrieve the generated `admin` credentials from **Actions →
+Dashboard Credentials**. Dashboard configuration editing remains disabled
+because StartOS owns the service configuration.
 
 Protected pages use broadly compatible HTTP Basic authentication. Open them
 only through the HTTPS interface published by StartOS; Basic credentials are

@@ -1,0 +1,1634 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>DATUM BLAKE2b Dashboard</title>
+  <link rel="icon" type="image/x-icon" href="/assets/icons/favicon.ico">
+  <style>
+    :root {
+      --bg: #030704;
+      --panel: rgba(9, 17, 11, 0.92);
+      --panel-strong: #0a120c;
+      --line: #1d3823;
+      --line-hot: #2d6b3a;
+      --green: #00ff65;
+      --green-soft: #89fcae;
+      --cyan: #48e7ff;
+      --yellow: #fff447;
+      --amber: #e7b64c;
+      --red: #ff6470;
+      --muted: #78917e;
+      --text: #e4f0e7;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-width: 320px;
+      background: var(--bg);
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      overflow-x: hidden;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 86% -10%, rgba(0, 255, 101, 0.12), transparent 30rem),
+        radial-gradient(circle at -8% 52%, rgba(72, 231, 255, 0.06), transparent 27rem),
+        linear-gradient(180deg, #050a06 0, var(--bg) 35rem);
+      font-family: var(--sans);
+    }
+
+    body::before {
+      position: fixed;
+      z-index: -1;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(31, 70, 40, 0.14) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(31, 70, 40, 0.1) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, black, transparent 70%);
+      content: "";
+      pointer-events: none;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    button,
+    a {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .shell {
+      width: min(1480px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 78px;
+      gap: 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      min-width: max-content;
+      gap: 13px;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border: 1px solid var(--line-hot);
+      background: linear-gradient(145deg, rgba(0, 255, 101, 0.14), rgba(0, 255, 101, 0.02));
+      box-shadow: inset 0 0 18px rgba(0, 255, 101, 0.08);
+    }
+
+    .brand-mark img {
+      width: 24px;
+      height: 29px;
+    }
+
+    .brand-name {
+      margin: 0;
+      color: var(--green);
+      font: 800 16px/1 var(--mono);
+      letter-spacing: 0.13em;
+    }
+
+    .brand-name span {
+      color: var(--text);
+    }
+
+    .brand-subtitle {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font: 500 10px/1 var(--mono);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .nav a {
+      padding: 10px 12px;
+      color: var(--muted);
+      font: 600 11px/1 var(--mono);
+      letter-spacing: 0.04em;
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: color 120ms ease, background 120ms ease;
+    }
+
+    .nav a:hover,
+    .nav a:focus-visible {
+      color: var(--green);
+      background: rgba(0, 255, 101, 0.08);
+      outline: none;
+    }
+
+    .nav a.active {
+      color: #041006;
+      background: var(--green);
+    }
+
+    .live-chip,
+    .refresh-state {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: max-content;
+      font: 700 11px/1 var(--mono);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .live-chip {
+      padding: 9px 12px;
+      border: 1px solid var(--line-hot);
+      color: var(--green-soft);
+      background: rgba(0, 255, 101, 0.06);
+    }
+
+    .live-chip.warn {
+      border-color: rgba(231, 182, 76, 0.5);
+      color: var(--amber);
+      background: rgba(231, 182, 76, 0.07);
+    }
+
+    .live-chip.bad {
+      border-color: rgba(255, 100, 112, 0.5);
+      color: var(--red);
+      background: rgba(255, 100, 112, 0.07);
+    }
+
+    .live-chip svg {
+      width: 12px !important;
+      height: 12px !important;
+      filter: drop-shadow(0 0 5px currentColor);
+    }
+
+    .dashboard {
+      padding: 34px 0 42px;
+    }
+
+    .dashboard > *,
+    .hero > * {
+      min-width: 0;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+      gap: 28px;
+      padding: 4px 2px 27px;
+    }
+
+    .eyebrow,
+    .panel-kicker,
+    .stat-label,
+    .detail-label {
+      color: var(--muted);
+      font: 700 10px/1.3 var(--mono);
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin: 0 0 11px;
+      color: var(--yellow);
+    }
+
+    .eyebrow::before {
+      width: 23px;
+      height: 1px;
+      background: var(--yellow);
+      content: "";
+    }
+
+    .hero h1 {
+      margin: 0;
+      color: #f4fff6;
+      font: 780 clamp(30px, 5vw, 58px)/0.98 var(--sans);
+      letter-spacing: -0.045em;
+    }
+
+    .hero h1 span {
+      color: var(--green);
+      text-shadow: 0 0 30px rgba(0, 255, 101, 0.16);
+    }
+
+    .hero-copy {
+      max-width: 790px;
+      margin: 15px 0 0;
+      color: #91a897;
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .hero-meta {
+      display: grid;
+      justify-items: end;
+      gap: 12px;
+      padding-bottom: 4px;
+    }
+
+    .meta-line {
+      color: var(--muted);
+      font: 11px/1.4 var(--mono);
+      text-align: right;
+    }
+
+    .meta-line b {
+      color: var(--cyan);
+      font-weight: 600;
+    }
+
+    .stats {
+      display: grid;
+      width: 100%;
+      min-width: 0;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.24);
+      overflow: hidden;
+    }
+
+    .stat {
+      position: relative;
+      min-width: 0;
+      min-height: 126px;
+      padding: 22px 20px 19px;
+      border-right: 1px solid var(--line);
+    }
+
+    .stat:last-child {
+      border-right: 0;
+    }
+
+    .stat::after {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: 2px;
+      background: var(--accent, var(--green));
+      opacity: 0.55;
+      content: "";
+      transform: scaleX(0.35);
+      transform-origin: left;
+      transition: transform 200ms ease, opacity 200ms ease;
+    }
+
+    .stat:hover::after {
+      opacity: 1;
+      transform: scaleX(1);
+    }
+
+    .stat-label {
+      display: block;
+      min-height: 25px;
+    }
+
+    .stat-value {
+      display: block;
+      margin-top: 7px;
+      color: var(--accent, var(--green));
+      font: 760 clamp(22px, 2.5vw, 34px)/1 var(--mono);
+      letter-spacing: -0.055em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .stat-detail {
+      display: block;
+      margin-top: 9px;
+      color: var(--muted);
+      font: 10px/1.3 var(--mono);
+    }
+
+    .stat.cyan {
+      --accent: var(--cyan);
+    }
+
+    .stat.yellow {
+      --accent: var(--yellow);
+    }
+
+    .stat.red {
+      --accent: var(--red);
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.65fr) minmax(300px, 0.85fr);
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .panel {
+      min-width: 0;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: inset 0 1px rgba(255, 255, 255, 0.015);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 56px;
+      gap: 18px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.012);
+    }
+
+    .panel-title {
+      margin: 3px 0 0;
+      color: var(--text);
+      font: 700 14px/1.2 var(--mono);
+    }
+
+    .panel-action {
+      border: 0;
+      padding: 7px 9px;
+      color: var(--green);
+      background: transparent;
+      font: 700 10px/1 var(--mono);
+      letter-spacing: 0.08em;
+      text-decoration: none;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .panel-action:hover,
+    .panel-action:focus-visible {
+      background: rgba(0, 255, 101, 0.08);
+      outline: none;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 224px;
+      padding: 17px 18px 16px;
+    }
+
+    #hashrate-chart {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .chart-empty {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font: 11px/1.4 var(--mono);
+      pointer-events: none;
+    }
+
+    .chart-empty.hidden {
+      display: none;
+    }
+
+    .chart-legend {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      color: var(--muted);
+      font: 10px/1 var(--mono);
+    }
+
+    .chart-legend b {
+      color: var(--green);
+      font-size: 11px;
+    }
+
+    .event-list {
+      display: flex;
+      flex-direction: column;
+      min-height: 224px;
+      max-height: 224px;
+      padding: 10px 0;
+      overflow: auto;
+    }
+
+    .event {
+      display: grid;
+      grid-template-columns: 58px 8px minmax(0, 1fr);
+      align-items: baseline;
+      gap: 9px;
+      padding: 7px 16px;
+      color: #9ab09f;
+      font: 10px/1.45 var(--mono);
+    }
+
+    .event time {
+      color: #526a58;
+    }
+
+    .event-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px rgba(0, 255, 101, 0.4);
+    }
+
+    .event.warn .event-dot {
+      background: var(--amber);
+      box-shadow: 0 0 8px rgba(231, 182, 76, 0.4);
+    }
+
+    .event.bad .event-dot {
+      background: var(--red);
+      box-shadow: 0 0 8px rgba(255, 100, 112, 0.4);
+    }
+
+    .event.empty {
+      display: block;
+      padding: 35px 18px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .best-shares-panel {
+      margin-top: 16px;
+    }
+
+    .best-share-global {
+      min-width: 190px;
+      text-align: right;
+    }
+
+    .best-share-global-value {
+      display: block;
+      color: var(--green);
+      font: 760 23px/1 var(--mono);
+      letter-spacing: -0.045em;
+    }
+
+    .best-share-global-detail {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font: 10px/1.3 var(--mono);
+    }
+
+    .best-share-table {
+      overflow-x: auto;
+    }
+
+    .best-share-row {
+      display: grid;
+      min-width: 720px;
+      grid-template-columns: minmax(240px, 1.55fr) repeat(3, minmax(130px, 0.8fr));
+      align-items: center;
+      border-bottom: 1px solid rgba(29, 56, 35, 0.72);
+    }
+
+    .best-share-row:last-child {
+      border-bottom: 0;
+    }
+
+    .best-share-header {
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.01);
+      font: 700 9px/1.3 var(--mono);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .best-share-cell {
+      min-width: 0;
+      padding: 12px 18px;
+      color: #c8d8cb;
+      font: 11px/1.45 var(--mono);
+      overflow-wrap: anywhere;
+    }
+
+    .best-share-cell:not(:first-child) {
+      text-align: right;
+    }
+
+    .best-share-row.is-best .best-share-value {
+      color: var(--green);
+    }
+
+    .best-share-identity strong,
+    .best-share-identity span {
+      display: block;
+    }
+
+    .best-share-identity strong {
+      color: #d9e8dc;
+      font-weight: 650;
+    }
+
+    .best-share-identity span {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    .best-share-empty {
+      padding: 28px 18px;
+      color: var(--muted);
+      font: 11px/1.5 var(--mono);
+      text-align: center;
+    }
+
+    .detail-list {
+      margin: 0;
+      padding: 5px 18px 10px;
+    }
+
+    .detail-row {
+      display: grid;
+      grid-template-columns: minmax(104px, 0.7fr) minmax(0, 1.3fr);
+      align-items: baseline;
+      gap: 16px;
+      margin: 0;
+      padding: 11px 0;
+      border-bottom: 1px solid rgba(29, 56, 35, 0.72);
+    }
+
+    .detail-row:last-child {
+      border-bottom: 0;
+    }
+
+    .detail-row dt,
+    .detail-row dd {
+      margin: 0;
+    }
+
+    .detail-value {
+      min-width: 0;
+      color: #c8d8cb;
+      font: 11px/1.45 var(--mono);
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+
+    .detail-value.accent {
+      color: var(--cyan);
+    }
+
+    .fingerprint {
+      grid-column: 1 / -1;
+    }
+
+    .fingerprint-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0;
+    }
+
+    .fingerprint-item {
+      min-width: 0;
+      padding: 17px 18px 19px;
+      border-right: 1px solid var(--line);
+    }
+
+    .fingerprint-item:last-child {
+      border-right: 0;
+    }
+
+    .fingerprint-value {
+      display: block;
+      margin-top: 10px;
+      color: #9fb6a4;
+      font: 10px/1.55 var(--mono);
+      overflow-wrap: anywhere;
+    }
+
+    .leading_zeros {
+      color: #425948;
+    }
+
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      margin-top: 17px;
+      padding: 14px 3px 0;
+      border-top: 1px solid rgba(29, 56, 35, 0.6);
+      color: var(--muted);
+      font: 10px/1.4 var(--mono);
+    }
+
+    .refresh-state {
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: none;
+    }
+
+    .refresh-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px rgba(0, 255, 101, 0.55);
+    }
+
+    .refresh-state.loading .refresh-dot {
+      animation: pulse 650ms ease-in-out infinite alternate;
+    }
+
+    .refresh-state.error {
+      color: var(--red);
+    }
+
+    .refresh-state.error .refresh-dot {
+      background: var(--red);
+      box-shadow: 0 0 8px rgba(255, 100, 112, 0.55);
+    }
+
+    .data-bank {
+      display: none !important;
+    }
+
+    @keyframes pulse {
+      to {
+        opacity: 0.25;
+        transform: scale(0.72);
+      }
+    }
+
+    @media (max-width: 1120px) {
+      .stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .stat:nth-child(3) {
+        border-right: 0;
+      }
+
+      .stat:nth-child(-n+3) {
+        border-bottom: 1px solid var(--line);
+      }
+
+      .details-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .identity-panel {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 820px) {
+      .shell {
+        width: min(100% - 22px, 1480px);
+      }
+
+      .topbar {
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        padding: 13px 0;
+      }
+
+      .nav {
+        order: 3;
+        width: 100%;
+        padding-top: 9px;
+        border-top: 1px solid var(--line);
+        overflow-x: auto;
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-meta {
+        justify-items: start;
+      }
+
+      .meta-line {
+        text-align: left;
+      }
+
+      .main-grid,
+      .details-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .identity-panel {
+        grid-column: auto;
+      }
+
+      .fingerprint-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .fingerprint-item {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .fingerprint-item:last-child {
+        border-bottom: 0;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .dashboard {
+        padding-top: 25px;
+      }
+
+      .brand-subtitle {
+        display: none;
+      }
+
+      .topbar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+
+      .brand {
+        min-width: 0;
+        gap: 8px;
+      }
+
+      .brand-mark {
+        width: 36px;
+        height: 36px;
+      }
+
+      .brand-name {
+        overflow: hidden;
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .live-chip {
+        min-width: 0;
+        max-width: 112px;
+        padding-right: 9px;
+        padding-left: 9px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      #gateway-status-output {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .nav a {
+        padding-right: 10px;
+        padding-left: 10px;
+      }
+
+      .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .stat {
+        min-height: 116px;
+        padding: 19px 15px 16px;
+      }
+
+      .stat:nth-child(2n) {
+        border-right: 0;
+      }
+
+      .stat:nth-child(3) {
+        border-right: 1px solid var(--line);
+      }
+
+      .stat:nth-child(-n+4) {
+        border-bottom: 1px solid var(--line);
+      }
+
+      .stat-value {
+        font-size: 22px;
+      }
+
+      .detail-row {
+        grid-template-columns: 1fr;
+        gap: 5px;
+      }
+
+      .detail-value {
+        text-align: left;
+      }
+
+      .footer {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .best-shares-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .best-share-global {
+        text-align: left;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="shell topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <img src="/assets/icons/datum_logo.svg" alt="">
+      </span>
+      <div>
+        <p class="brand-name">DATUM <span>// BLAKE2b</span></p>
+        <p class="brand-subtitle">decentralized gateway monitor</p>
+      </div>
+    </div>
+
+    <nav class="nav" aria-label="DATUM dashboard">
+      <a class="active" href="/" aria-current="page">Mine</a>
+      <a href="/clients">Clients</a>
+      <a href="/threads">Threads</a>
+      <a href="/coinbaser">Coinbase</a>
+      <a href="/config">Config</a>
+    </nav>
+
+    <div class="live-chip" id="gateway-chip" aria-live="polite">
+      <span id="gateway-status-output">Connecting</span>
+    </div>
+  </header>
+
+  <main class="shell dashboard">
+    <section class="hero" aria-labelledby="dashboard-title">
+      <div>
+        <p class="eyebrow">Solo lottery mining</p>
+        <h1 id="dashboard-title">Local work. <span>Live signal.</span></h1>
+        <p class="hero-copy">
+          Your node builds the template, DATUM serves the work, and the miner searches it.
+          This view refreshes locally without sending telemetry anywhere else.
+        </p>
+      </div>
+      <div class="hero-meta">
+        <div class="meta-line">JOB <b id="job-info-output">waiting for template</b></div>
+        <div class="meta-line">GATEWAY UP <b id="uptime-output">—</b></div>
+      </div>
+    </section>
+
+    <section class="stats" aria-label="Mining summary">
+      <article class="stat">
+        <span class="stat-label">Estimated hashrate</span>
+        <strong class="stat-value" id="hashrate-output">—</strong>
+        <span class="stat-detail">rolling DATUM estimate</span>
+      </article>
+      <article class="stat">
+        <span class="stat-label">Shares accepted</span>
+        <strong class="stat-value" id="accepted-output">—</strong>
+        <span class="stat-detail" id="accepted-detail">local validation</span>
+      </article>
+      <article class="stat red">
+        <span class="stat-label">Shares rejected</span>
+        <strong class="stat-value" id="rejected-output">—</strong>
+        <span class="stat-detail" id="rejected-detail">local validation</span>
+      </article>
+      <article class="stat cyan">
+        <span class="stat-label">Miner connections</span>
+        <strong class="stat-value" id="connections-output">—</strong>
+        <span class="stat-detail" id="subscriptions-detail">— work subscriptions</span>
+      </article>
+      <article class="stat cyan">
+        <span class="stat-label">Block height</span>
+        <strong class="stat-value" id="height-output">—</strong>
+        <span class="stat-detail">current local template</span>
+      </article>
+      <article class="stat yellow">
+        <span class="stat-label">Network difficulty</span>
+        <strong class="stat-value" id="difficulty-output">—</strong>
+        <span class="stat-detail">target for this job</span>
+      </article>
+    </section>
+
+    <div class="main-grid">
+      <section class="panel" aria-labelledby="hashrate-title">
+        <header class="panel-head">
+          <div>
+            <span class="panel-kicker">Signal / session</span>
+            <h2 class="panel-title" id="hashrate-title">Hashrate history</h2>
+          </div>
+          <div class="chart-legend">
+            <span>LAST <b id="chart-last">—</b></span>
+            <span id="chart-window">5s samples</span>
+          </div>
+        </header>
+        <div class="chart-wrap">
+          <canvas id="hashrate-chart" aria-label="Hashrate history chart"></canvas>
+          <div class="chart-empty" id="chart-empty">Collecting live samples…</div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="events-title">
+        <header class="panel-head">
+          <div>
+            <span class="panel-kicker">Changes / this tab</span>
+            <h2 class="panel-title" id="events-title">Activity</h2>
+          </div>
+          <button class="panel-action" id="refresh-button" type="button">Refresh</button>
+        </header>
+        <div class="event-list" id="event-list" aria-live="polite"></div>
+      </section>
+    </div>
+
+    <section class="panel best-shares-panel" aria-labelledby="best-shares-title">
+      <header class="panel-head best-shares-head">
+        <div>
+          <span class="panel-kicker">Proof quality / live sessions</span>
+          <h2 class="panel-title" id="best-shares-title">Best shares by miner</h2>
+        </div>
+        <div class="best-share-global">
+          <strong class="best-share-global-value" id="global-best-share-output">—</strong>
+          <span class="best-share-global-detail" id="global-best-share-detail">since gateway start</span>
+        </div>
+      </header>
+      <div class="best-share-table">
+        <div class="best-share-row best-share-header" aria-hidden="true">
+          <span class="best-share-cell">Connected miner</span>
+          <span class="best-share-cell">Best share</span>
+          <span class="best-share-cell">Of network target</span>
+          <span class="best-share-cell">Accepted work</span>
+        </div>
+        <div id="best-share-clients" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <div class="details-grid">
+      <section class="panel" aria-labelledby="stratum-title">
+        <header class="panel-head">
+          <div>
+            <span class="panel-kicker">Engine</span>
+            <h2 class="panel-title" id="stratum-title">Stratum server</h2>
+          </div>
+          <a class="panel-action" href="/clients">Inspect clients</a>
+        </header>
+        <dl class="detail-list">
+          <div class="detail-row">
+            <dt class="detail-label">Active threads</dt>
+            <dd class="detail-value accent" id="threads-output">—</dd>
+          </div>
+          <div class="detail-row">
+            <dt class="detail-label">Connections</dt>
+            <dd class="detail-value" id="connections-detail-output">—</dd>
+          </div>
+          <div class="detail-row">
+            <dt class="detail-label">Subscriptions</dt>
+            <dd class="detail-value" id="subscriptions-output">—</dd>
+          </div>
+          <div class="detail-row">
+            <dt class="detail-label">Accepted work</dt>
+            <dd class="detail-value" id="accepted-full-output">—</dd>
+          </div>
+          <div class="detail-row">
+            <dt class="detail-label">Rejected work</dt>
+            <dd class="detail-value" id="rejected-full-output">—</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="panel" aria-labelledby="job-title">
+        <header class="panel-head">
+          <div>
+            <span class="panel-kicker">Template</span>
+            <h2 class="panel-title" id="job-title">Current job</h2>
+          </div>
+        </header>
+        <dl class="detail-list">
+          <div class="detail-row">
+            <dt class="detail-label">Block value</dt>
+            <dd class="detail-value accent" id="block-value-output">—</dd>
+          </div>
+          <div class="detail-row">
+            <dt class="detail-label">Transactions</dt>
+            <dd class="detail-value" id="transactions-output">—</dd>
+          </div>
+          <div class="detail-row">
+            <dt class="detail-label">Size</dt>
+            <dd class="detail-value" id="size-output">—</dd>
+          </div>
+          <div class="detail-row">
+            <dt class="detail-label">Weight</dt>
+            <dd class="detail-value" id="weight-output">—</dd>
+          </div>
+          <div class="detail-row">
+            <dt class="detail-label">Bits / version</dt>
+            <dd class="detail-value"><span id="bits-output">—</span> / <span id="version-output">—</span></dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="panel identity-panel" aria-labelledby="identity-title">
+        <header class="panel-head">
+          <div>
+            <span class="panel-kicker">On-chain</span>
+            <h2 class="panel-title" id="identity-title">Mining identity</h2>
+          </div>
+        </header>
+        <dl class="detail-list">
+          <div class="detail-row">
+            <dt class="detail-label">Primary tag</dt>
+            <dd class="detail-value accent" id="pool-tag-output">—</dd>
+          </div>
+          <div class="detail-row">
+            <dt class="detail-label">Miner tag</dt>
+            <dd class="detail-value" id="miner-tag-output">—</dd>
+          </div>
+          <div class="detail-row">
+            <dt class="detail-label">Pool host</dt>
+            <dd class="detail-value" id="pool-host-output">—</dd>
+          </div>
+          <div class="detail-row">
+            <dt class="detail-label">Pool shares</dt>
+            <dd class="detail-value"><span id="pool-accepted-output">—</span> acc / <span id="pool-rejected-output">—</span> rej</dd>
+          </div>
+          <div class="detail-row">
+            <dt class="detail-label">Minimum diff</dt>
+            <dd class="detail-value" id="pool-diff-output">—</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="panel fingerprint" aria-labelledby="fingerprint-title">
+        <header class="panel-head">
+          <div>
+            <span class="panel-kicker">Proof-of-work inputs</span>
+            <h2 class="panel-title" id="fingerprint-title">Work fingerprint</h2>
+          </div>
+        </header>
+        <div class="fingerprint-grid">
+          <div class="fingerprint-item">
+            <span class="detail-label">Previous block</span>
+            <code class="fingerprint-value" id="previous-block-output">—</code>
+          </div>
+          <div class="fingerprint-item">
+            <span class="detail-label">Block target</span>
+            <code class="fingerprint-value" id="target-output">—</code>
+          </div>
+          <div class="fingerprint-item">
+            <span class="detail-label">Witness commitment</span>
+            <code class="fingerprint-value" id="witness-output">—</code>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer class="footer">
+      <span>pyblock-inspired presentation · data served directly by your DATUM gateway</span>
+      <span class="refresh-state" id="refresh-state" aria-live="polite">
+        <span class="refresh-dot" aria-hidden="true"></span>
+        <span id="refresh-text">Live refresh every 5 seconds</span>
+      </span>
+    </footer>
+  </main>
+
+  <div class="data-bank" aria-hidden="true">
+    <span data-field="shares-accepted">${STRATUM_SHARES_ACCEPTED}</span>
+    <span data-field="shares-rejected">${STRATUM_SHARES_REJECTED}</span>
+    <span data-field="pool-shares-accepted">${DATUM_SHARES_ACCEPTED}</span>
+    <span data-field="pool-shares-rejected">${DATUM_SHARES_REJECTED}</span>
+    <span data-field="gateway-status" data-html>${DATUM_CONNECTION_STATUS}</span>
+    <span data-field="pool-host">${DATUM_POOL_HOST}</span>
+    <span data-field="pool-tag">${DATUM_POOL_TAG}</span>
+    <span data-field="miner-tag">${DATUM_MINER_TAG}</span>
+    <span data-field="pool-diff">${DATUM_POOL_DIFF}</span>
+    <span data-field="uptime">${DATUM_PROCESS_UPTIME}</span>
+    <span data-field="threads">${STRATUM_ACTIVE_THREADS}</span>
+    <span data-field="connections">${STRATUM_TOTAL_CONNECTIONS}</span>
+    <span data-field="subscriptions">${STRATUM_TOTAL_SUBSCRIPTIONS}</span>
+    <span data-field="hashrate">${STRATUM_HASHRATE_ESTIMATE}</span>
+    <span data-field="job-info">${STRATUM_JOB_INFO}</span>
+    <span data-field="height">${STRATUM_JOB_BLOCK_HEIGHT}</span>
+    <span data-field="block-value">${STRATUM_JOB_BLOCK_VALUE}</span>
+    <span data-field="previous-block" data-html>${STRATUM_JOB_PREVBLOCK}</span>
+    <span data-field="target" data-html>${STRATUM_JOB_TARGET}</span>
+    <span data-field="witness">${STRATUM_JOB_WITNESS}</span>
+    <span data-field="difficulty">${STRATUM_JOB_DIFF}</span>
+    <span data-field="version">${STRATUM_JOB_VERSION}</span>
+    <span data-field="bits">${STRATUM_JOB_BITS}</span>
+    <span data-field="size">${STRATUM_JOB_SIZE}</span>
+    <span data-field="weight">${STRATUM_JOB_WEIGHT}</span>
+    <span data-field="transactions">${STRATUM_JOB_TXNCOUNT}</span>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var POLL_MS = 5000;
+      var MAX_SAMPLES = 120;
+      var MAX_EVENTS = 40;
+      var previousSnapshot = null;
+      var lastUpdatedAt = Date.now();
+      var refreshInFlight = false;
+      var bestShares = { global_best: 0, clients: [] };
+      var chartHistory = readSession("datum-hashrate-history", []);
+      var events = readSession("datum-activity", []);
+
+      function byId(id) {
+        return document.getElementById(id);
+      }
+
+      function readSession(key, fallback) {
+        try {
+          var parsed = JSON.parse(sessionStorage.getItem(key));
+          return Array.isArray(parsed) ? parsed : fallback;
+        } catch (error) {
+          return fallback;
+        }
+      }
+
+      function writeSession(key, value) {
+        try {
+          sessionStorage.setItem(key, JSON.stringify(value));
+        } catch (error) {
+          return;
+        }
+      }
+
+      function field(name, root) {
+        var scope = root || document;
+        return scope.querySelector('[data-field="' + name + '"]');
+      }
+
+      function fieldText(name, root) {
+        var node = field(name, root);
+        return node ? node.textContent.trim() : "";
+      }
+
+      function parseNumber(raw) {
+        var value = Number(String(raw || "").replace(/[^0-9.+-]/g, ""));
+        return Number.isFinite(value) ? value : 0;
+      }
+
+      function parseInteger(raw) {
+        var match = String(raw || "").match(/[0-9][0-9,]*/);
+        return match ? Number(match[0].replace(/,/g, "")) : 0;
+      }
+
+      function parseShares(raw) {
+        var match = String(raw || "").match(/^\s*([0-9,]+)(?:\s*\(([0-9,]+)\s+diff\))?/i);
+        return {
+          count: match ? Number(match[1].replace(/,/g, "")) : 0,
+          diff: match && match[2] ? Number(match[2].replace(/,/g, "")) : 0
+        };
+      }
+
+      function parseHashrate(raw) {
+        var value = parseNumber(raw);
+        var lower = String(raw || "").toLowerCase();
+        if (lower.indexOf("ph") !== -1) return value * 1000;
+        if (lower.indexOf("gh") !== -1) return value / 1000;
+        if (lower.indexOf("mh") !== -1) return value / 1000000;
+        return value;
+      }
+
+      function compactNumber(value) {
+        if (!Number.isFinite(value)) return "—";
+        if (value >= 1000000000000) return (value / 1000000000000).toFixed(2) + "T";
+        if (value >= 1000000000) return (value / 1000000000).toFixed(2) + "G";
+        if (value >= 1000000) return (value / 1000000).toFixed(2) + "M";
+        if (value >= 1000) return (value / 1000).toFixed(2) + "K";
+        if (value % 1) return value.toFixed(2);
+        return value.toLocaleString();
+      }
+
+      function formatHashrate(ths) {
+        if (!Number.isFinite(ths)) return "—";
+        if (ths > 0 && ths < 1) return (ths * 1000).toFixed(1) + " GH/s";
+        return ths.toFixed(2) + " TH/s";
+      }
+
+      function snapshot() {
+        var accepted = parseShares(fieldText("shares-accepted"));
+        var rejected = parseShares(fieldText("shares-rejected"));
+        return {
+          accepted: accepted.count,
+          acceptedDiff: accepted.diff,
+          rejected: rejected.count,
+          rejectedDiff: rejected.diff,
+          connections: parseInteger(fieldText("connections")),
+          subscriptions: parseInteger(fieldText("subscriptions")),
+          height: parseInteger(fieldText("height")),
+          hashrate: parseHashrate(fieldText("hashrate")),
+          bestShare: Number(bestShares.global_best) || 0,
+          status: fieldText("gateway-status")
+        };
+      }
+
+      function setText(id, value) {
+        var node = byId(id);
+        if (node) node.textContent = value || "—";
+      }
+
+      function setHtml(id, value) {
+        var node = byId(id);
+        if (node) node.innerHTML = value || "—";
+      }
+
+      function shareTargetPercent(bestShare) {
+        var target = parseNumber(fieldText("difficulty"));
+        if (!Number.isFinite(bestShare) || bestShare <= 0 || target <= 0) return "—";
+        var percent = (bestShare / target) * 100;
+        if (percent >= 1000) return percent.toFixed(0) + "%";
+        if (percent >= 10) return percent.toFixed(1) + "%";
+        return percent.toFixed(2) + "%";
+      }
+
+      function renderBestShares() {
+        var globalBest = Number(bestShares.global_best) || 0;
+        var globalTarget = shareTargetPercent(globalBest);
+        setText("global-best-share-output", globalBest > 0 ? compactNumber(globalBest) : "—");
+        setText(
+          "global-best-share-detail",
+          globalBest > 0 ? globalTarget + " of current target · since gateway start" : "since gateway start"
+        );
+
+        var list = byId("best-share-clients");
+        list.replaceChildren();
+        var clients = Array.isArray(bestShares.clients) ? bestShares.clients : [];
+        if (!clients.length) {
+          var empty = document.createElement("div");
+          empty.className = "best-share-empty";
+          empty.textContent = "No miners are currently connected.";
+          list.appendChild(empty);
+          return;
+        }
+
+        clients.forEach(function (client) {
+          var best = Number(client.best_share) || 0;
+          var accepted = Number(client.accepted) || 0;
+          var acceptedDiff = Number(client.accepted_diff) || 0;
+          var row = document.createElement("div");
+          var identity = document.createElement("div");
+          var identityName = document.createElement("strong");
+          var identityDetail = document.createElement("span");
+          var bestCell = document.createElement("div");
+          var targetCell = document.createElement("div");
+          var acceptedCell = document.createElement("div");
+
+          row.className = "best-share-row" + (best > 0 && best === globalBest ? " is-best" : "");
+          identity.className = "best-share-cell best-share-identity";
+          identityName.textContent = client.remote_host || "Client " + (client.id || "—");
+          identityDetail.textContent = [client.useragent, client.username, "slot " + (client.id || "—")]
+            .filter(Boolean)
+            .join(" · ");
+          identity.append(identityName, identityDetail);
+
+          bestCell.className = "best-share-cell best-share-value";
+          bestCell.textContent = best > 0 ? compactNumber(best) : "—";
+          targetCell.className = "best-share-cell";
+          targetCell.textContent = shareTargetPercent(best);
+          acceptedCell.className = "best-share-cell";
+          acceptedCell.textContent = compactNumber(accepted) + " shares · " + compactNumber(acceptedDiff) + " diff";
+          row.append(identity, bestCell, targetCell, acceptedCell);
+          list.appendChild(row);
+        });
+      }
+
+      function render() {
+        var current = snapshot();
+        var accepted = parseShares(fieldText("shares-accepted"));
+        var rejected = parseShares(fieldText("shares-rejected"));
+        var statusSource = field("gateway-status");
+        var previousBlock = field("previous-block");
+        var target = field("target");
+
+        setText("hashrate-output", formatHashrate(current.hashrate));
+        setText("accepted-output", compactNumber(accepted.count));
+        setText("accepted-detail", compactNumber(accepted.diff) + " accumulated diff");
+        setText("rejected-output", compactNumber(rejected.count));
+        setText("rejected-detail", compactNumber(rejected.diff) + " accumulated diff");
+        setText("connections-output", compactNumber(current.connections));
+        setText("subscriptions-detail", compactNumber(current.subscriptions) + " work subscriptions");
+        setText(
+          "height-output",
+          Number.isFinite(current.height) ? current.height.toLocaleString() : "—"
+        );
+        setText("difficulty-output", compactNumber(parseNumber(fieldText("difficulty"))));
+        setText("job-info-output", fieldText("job-info") || "waiting for template");
+        setText("uptime-output", fieldText("uptime"));
+        setText("threads-output", fieldText("threads"));
+        setText("connections-detail-output", fieldText("connections"));
+        setText("subscriptions-output", fieldText("subscriptions"));
+        setText("accepted-full-output", fieldText("shares-accepted"));
+        setText("rejected-full-output", fieldText("shares-rejected"));
+        setText("block-value-output", fieldText("block-value"));
+        setText("transactions-output", fieldText("transactions"));
+        setText("size-output", compactNumber(parseInteger(fieldText("size"))) + " bytes");
+        setText("weight-output", compactNumber(parseInteger(fieldText("weight"))) + " WU");
+        setText("bits-output", fieldText("bits"));
+        setText("version-output", fieldText("version"));
+        setText("pool-tag-output", fieldText("pool-tag"));
+        setText("miner-tag-output", fieldText("miner-tag"));
+        setText("pool-host-output", fieldText("pool-host"));
+        setText("pool-accepted-output", fieldText("pool-shares-accepted"));
+        setText("pool-rejected-output", fieldText("pool-shares-rejected"));
+        setText("pool-diff-output", fieldText("pool-diff"));
+        setHtml("previous-block-output", previousBlock ? previousBlock.innerHTML : "—");
+        setHtml("target-output", target ? target.innerHTML : "—");
+        setText("witness-output", fieldText("witness"));
+        renderBestShares();
+
+        var chip = byId("gateway-chip");
+        var statusLower = current.status.toLowerCase();
+        chip.classList.remove("warn", "bad");
+        if (statusLower.indexOf("error") !== -1 || statusLower.indexOf("not ready") !== -1) {
+          chip.classList.add("bad");
+        } else if (statusLower.indexOf("initial") !== -1) {
+          chip.classList.add("warn");
+        }
+        setHtml("gateway-status-output", statusSource ? statusSource.innerHTML : "Offline");
+
+        setText("chart-last", formatHashrate(current.hashrate));
+        drawChart();
+        renderEvents();
+        return current;
+      }
+
+      function addSample(value) {
+        if (!Number.isFinite(value)) return;
+        var now = Date.now();
+        var last = chartHistory.length ? chartHistory[chartHistory.length - 1] : null;
+        if (last && now - last.time < 2500) {
+          last.value = value;
+          last.time = now;
+        } else {
+          chartHistory.push({ time: now, value: value });
+        }
+        chartHistory = chartHistory.slice(-MAX_SAMPLES);
+        writeSession("datum-hashrate-history", chartHistory);
+      }
+
+      function addEvent(message, tone) {
+        events.push({ time: Date.now(), message: message, tone: tone || "ok" });
+        events = events.slice(-MAX_EVENTS);
+        writeSession("datum-activity", events);
+      }
+
+      function detectChanges(before, after) {
+        if (!before) return;
+        if (after.accepted > before.accepted) {
+          addEvent("Accepted " + (after.accepted - before.accepted) + " new share" + (after.accepted - before.accepted === 1 ? "" : "s"), "ok");
+        }
+        if (after.rejected > before.rejected) {
+          addEvent("Rejected " + (after.rejected - before.rejected) + " new share" + (after.rejected - before.rejected === 1 ? "" : "s"), "bad");
+        }
+        if (after.height && before.height && after.height !== before.height) {
+          addEvent("New block template at height " + after.height.toLocaleString(), "ok");
+        }
+        if (after.connections !== before.connections) {
+          addEvent("Miner connections changed: " + before.connections + " → " + after.connections, after.connections ? "ok" : "warn");
+        }
+        if (after.status !== before.status) {
+          addEvent("Gateway status: " + after.status, after.status.toLowerCase().indexOf("error") === -1 ? "ok" : "bad");
+        }
+        if (after.bestShare > before.bestShare) {
+          addEvent("New gateway best share: " + compactNumber(after.bestShare), "ok");
+        }
+      }
+
+      function renderEvents() {
+        var list = byId("event-list");
+        list.replaceChildren();
+        if (!events.length) {
+          var empty = document.createElement("div");
+          empty.className = "event empty";
+          empty.textContent = "Watching for shares, templates, and client changes…";
+          list.appendChild(empty);
+          return;
+        }
+        events.slice(-9).reverse().forEach(function (item) {
+          var row = document.createElement("div");
+          var time = document.createElement("time");
+          var dot = document.createElement("span");
+          var message = document.createElement("span");
+          row.className = "event " + (item.tone || "ok");
+          time.dateTime = new Date(item.time).toISOString();
+          time.textContent = new Date(item.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+          dot.className = "event-dot";
+          message.textContent = item.message;
+          row.append(time, dot, message);
+          list.appendChild(row);
+        });
+      }
+
+      function drawChart() {
+        var canvas = byId("hashrate-chart");
+        var empty = byId("chart-empty");
+        var rect = canvas.getBoundingClientRect();
+        var ratio = Math.max(1, window.devicePixelRatio || 1);
+        var width = Math.max(1, Math.round(rect.width * ratio));
+        var height = Math.max(1, Math.round(rect.height * ratio));
+        if (canvas.width !== width || canvas.height !== height) {
+          canvas.width = width;
+          canvas.height = height;
+        }
+
+        var context = canvas.getContext("2d");
+        context.setTransform(ratio, 0, 0, ratio, 0, 0);
+        var w = rect.width;
+        var h = rect.height;
+        context.clearRect(0, 0, w, h);
+
+        context.strokeStyle = "rgba(45, 107, 58, 0.28)";
+        context.lineWidth = 1;
+        for (var row = 1; row < 4; row += 1) {
+          var y = Math.round((h / 4) * row) + 0.5;
+          context.beginPath();
+          context.moveTo(0, y);
+          context.lineTo(w, y);
+          context.stroke();
+        }
+
+        if (chartHistory.length < 2) {
+          empty.classList.remove("hidden");
+          return;
+        }
+        empty.classList.add("hidden");
+
+        var values = chartHistory.map(function (point) { return point.value; });
+        var max = Math.max.apply(Math, values.concat([0.01]));
+        var min = Math.min.apply(Math, values);
+        var range = Math.max(max - min, max * 0.12, 0.01);
+        var padY = 12;
+        var points = values.map(function (value, index) {
+          return {
+            x: values.length === 1 ? w : index * (w / (values.length - 1)),
+            y: padY + (h - padY * 2) * (1 - ((value - min) / range))
+          };
+        });
+
+        var gradient = context.createLinearGradient(0, 0, 0, h);
+        gradient.addColorStop(0, "rgba(0, 255, 101, 0.24)");
+        gradient.addColorStop(1, "rgba(0, 255, 101, 0)");
+        context.beginPath();
+        points.forEach(function (point, index) {
+          if (index === 0) context.moveTo(point.x, point.y);
+          else context.lineTo(point.x, point.y);
+        });
+        context.lineTo(w, h);
+        context.lineTo(0, h);
+        context.closePath();
+        context.fillStyle = gradient;
+        context.fill();
+
+        context.beginPath();
+        points.forEach(function (point, index) {
+          if (index === 0) context.moveTo(point.x, point.y);
+          else context.lineTo(point.x, point.y);
+        });
+        context.strokeStyle = "#00ff65";
+        context.lineWidth = 2;
+        context.lineJoin = "round";
+        context.stroke();
+
+        var last = points[points.length - 1];
+        context.beginPath();
+        context.arc(last.x, last.y, 3.5, 0, Math.PI * 2);
+        context.fillStyle = "#00ff65";
+        context.shadowColor = "#00ff65";
+        context.shadowBlur = 9;
+        context.fill();
+        context.shadowBlur = 0;
+
+        var minutes = Math.max(1, Math.round((chartHistory[chartHistory.length - 1].time - chartHistory[0].time) / 60000));
+        setText("chart-window", minutes + "m window · 5s samples");
+      }
+
+      function syncFields(remoteDocument) {
+        document.querySelectorAll("[data-field]").forEach(function (current) {
+          var name = current.getAttribute("data-field");
+          var incoming = field(name, remoteDocument);
+          if (!incoming) return;
+          if (current.hasAttribute("data-html")) current.innerHTML = incoming.innerHTML;
+          else current.textContent = incoming.textContent;
+        });
+      }
+
+      function setRefreshState(mode, message) {
+        var state = byId("refresh-state");
+        state.classList.remove("loading", "error");
+        if (mode) state.classList.add(mode);
+        setText("refresh-text", message);
+      }
+
+      async function refresh() {
+        if (refreshInFlight) return;
+        refreshInFlight = true;
+        setRefreshState("loading", "Reading live DATUM state…");
+        try {
+          var refreshUrl = new URL(window.location.href);
+          refreshUrl.username = "";
+          refreshUrl.password = "";
+          refreshUrl.hash = "";
+          refreshUrl.search = "dashboard-refresh=" + Date.now();
+          var bestSharesUrl = new URL(refreshUrl.href);
+          bestSharesUrl.pathname = "/api/best-shares";
+          var responses = await Promise.all([
+            fetch(refreshUrl.href, { cache: "no-store", credentials: "same-origin" }),
+            fetch(bestSharesUrl.href, { cache: "no-store", credentials: "same-origin" })
+          ]);
+          var response = responses[0];
+          var bestSharesResponse = responses[1];
+          if (!response.ok) throw new Error("HTTP " + response.status);
+          if (!bestSharesResponse.ok) throw new Error("Best-share API HTTP " + bestSharesResponse.status);
+          var payloads = await Promise.all([response.text(), bestSharesResponse.json()]);
+          var html = payloads[0];
+          bestShares = payloads[1] || { global_best: 0, clients: [] };
+          var remoteDocument = new DOMParser().parseFromString(html, "text/html");
+          var before = previousSnapshot || snapshot();
+          syncFields(remoteDocument);
+          var after = snapshot();
+          detectChanges(before, after);
+          addSample(after.hashrate);
+          previousSnapshot = after;
+          render();
+          lastUpdatedAt = Date.now();
+          setRefreshState("", "Updated just now · every 5 seconds");
+        } catch (error) {
+          addEvent("Dashboard refresh failed: " + error.message, "bad");
+          renderEvents();
+          setRefreshState("error", "Refresh failed · retrying");
+        } finally {
+          refreshInFlight = false;
+        }
+      }
+
+      function updateRefreshAge() {
+        if (refreshInFlight || byId("refresh-state").classList.contains("error")) return;
+        var age = Math.floor((Date.now() - lastUpdatedAt) / 1000);
+        setText("refresh-text", age < 2 ? "Updated just now · every 5 seconds" : "Updated " + age + "s ago · every 5 seconds");
+      }
+
+      previousSnapshot = snapshot();
+      addSample(previousSnapshot.hashrate);
+      if (!events.length) addEvent("Dashboard connected · live DATUM polling active", "ok");
+      render();
+
+      byId("refresh-button").addEventListener("click", refresh);
+      window.addEventListener("resize", drawChart);
+      document.addEventListener("visibilitychange", function () {
+        if (!document.hidden) refresh();
+      });
+      refresh();
+      setInterval(refresh, POLL_MS);
+      setInterval(updateRefreshAge, 1000);
+    }());
+  </script>
+</body>
+</html>
