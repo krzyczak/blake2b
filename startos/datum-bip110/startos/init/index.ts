@@ -6,12 +6,14 @@ import { sdk } from '../sdk'
 import { versionGraph } from '../versions'
 import { seedDashboardPassword } from './seed-dashboard-password'
 import { seedMiningSettings } from './seed-mining-settings'
+import { seedStore } from './seed-store'
 
 export const init = sdk.setupInit(
   restoreInit,
   versionGraph,
   seedDashboardPassword,
   seedMiningSettings,
+  seedStore,
   setInterfaces,
   setDependencies,
   actions,

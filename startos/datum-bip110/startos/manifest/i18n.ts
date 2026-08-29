@@ -4,10 +4,15 @@ export const short = {
 
 export const long = {
   en_US:
-    'Pinned Maveth DATUM Gateway build with integrated BLAKE2b header-v2 and activation-headline support. It connects automatically to Bitcoin Knots BIP110 and presents a Sia-style raw Stratum TCP endpoint for the Apple Silicon miner on dummy regtest or public testnet4.',
+    'Pinned Maveth DATUM Gateway build with integrated BLAKE2b header-v2 and activation-headline support. It can use the official Start9 Bitcoin package or the companion Bitcoin Knots BIP110 lab package and presents a Sia-style raw Stratum TCP endpoint for the Apple Silicon miner.',
+}
+
+export const bitcoinBip110DependencyDescription = {
+  en_US:
+    'Provides block templates and block validation for the private lab and public test networks.',
 }
 
 export const bitcoinDependencyDescription = {
   en_US:
-    'Provides network-selected block templates and validates submitted BLAKE2b blocks.',
+    'Provides block templates and block validation when the official Start9 Bitcoin backend is selected.',
 }

@@ -31,6 +31,13 @@ const dict = {
   'Set Solo Payout Address': 27,
   'Configure the address written into solo-mined coinbase transaction outputs.': 28,
   'Use an address for the selected node network whose private key you control. A wrong-network or unowned address can make a mined reward inaccessible.': 29,
+  'Bitcoin Node': 30,
+  'Select the Bitcoin node that supplies mining work.': 31,
+  'Bitcoin (official Start9 package)': 32,
+  'Bitcoin Knots BIP110 (lab package)': 33,
+  'Select Bitcoin Node': 34,
+  'Switch the Bitcoin node used for block templates and block submission.': 35,
+  'Switching nodes does not copy blockchain data. Set a payout address for the selected node network before mining.': 36,
 } as const
 
 export type I18nKey = keyof typeof dict

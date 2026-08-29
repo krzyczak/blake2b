@@ -13,14 +13,22 @@ COINBASE_TAG_SECONDARY="${DATUM_COINBASE_TAG_SECONDARY:-StartOS-BIP110}"
 POOL_ADDRESS="${DATUM_POOL_ADDRESS:-mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn}"
 DASHBOARD_ADMIN_PASSWORD="${DATUM_DASHBOARD_ADMIN_PASSWORD:?DATUM dashboard password is required}"
 
+if [ -n "${DATUM_RPC_COOKIE_FILE:-}" ]; then
+    RPC_AUTH_CONFIG="\"rpccookiefile\": \"${DATUM_RPC_COOKIE_FILE}\""
+else
+    RPC_USER="${DATUM_RPC_USER:?Bitcoin RPC username is required}"
+    RPC_PASSWORD="${DATUM_RPC_PASSWORD:?Bitcoin RPC password is required}"
+    RPC_AUTH_CONFIG="\"rpcuser\": \"${RPC_USER}\",
+    \"rpcpassword\": \"${RPC_PASSWORD}\""
+fi
+
 mkdir -p "$DATA_DIR"
 umask 077
 
 cat > "$DATA_DIR/config.json" <<EOF
 {
   "bitcoind": {
-    "rpcuser": "datum",
-    "rpcpassword": "bip110-regtest-lab",
+    ${RPC_AUTH_CONFIG},
     "rpcurl": "http://${BITCOIN_RPC_ADDRESS}",
     "work_update_seconds": 5,
     "notify_fallback": true

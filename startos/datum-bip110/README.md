@@ -5,13 +5,19 @@ to commit `e82d7e5422cb3e425ab7f9d9cbe230b1bc7a2f11` and its verified source
 tarball hash. This branch contains InnerHat's current BLAKE2b implementation
 and adds the test-lab activation-headline and low-height regtest fixes.
 
-The service requires the companion `bitcoin-bip110` package. It discovers the
-node's StartOS bridge address at runtime and exports Sia-style BLAKE2b Stratum
-on raw TCP. This revision negotiates the RC3 `blake2b` template rule, supports
-the canonical header-v2 layout, copies the activation headline from
-`getblocktemplate` into the activation coinbase, and validates/submits
-BLAKE2b work. Use the Apple miner's `--sia` mode with this package. No remote
-DATUM pool is configured.
+The service can use either the official Start9 Bitcoin Knots package
+(`bitcoind`) or the companion `bitcoin-bip110` lab package. The **Select
+Bitcoin Node** action changes the active dependency. DATUM resolves the
+selected node's StartOS bridge address at runtime. It authenticates to the
+official package through its read-only RPC cookie and to the lab package with
+its bridge-only RPC credentials. Switching does not move, copy, or delete
+either node's blockchain data.
+
+DATUM exports Sia-style BLAKE2b Stratum on raw TCP. This revision negotiates
+the RC3 `blake2b` template rule, supports the canonical header-v2 layout,
+copies the activation headline from `getblocktemplate` into the activation
+coinbase, and validates/submits BLAKE2b work. Use the Apple miner's `--sia`
+mode with this package. No remote DATUM pool is configured.
 
 Maveth can fetch a DATUM pool public key when an external pool host is enabled.
 This package deliberately leaves the pool host empty, so pool initialization
@@ -26,7 +32,8 @@ that tag to a display name.
 The **Set Solo Payout Address** action persists the address used for the
 coinbase transaction output while no upstream DATUM pool is configured. The
 gateway restarts after a change. Use a Bitcoin address appropriate for the
-selected node network whose private key you control.
+selected node network whose private key you control. Change it before moving
+between a test network and mainnet.
 
 The package exports a live pyblock-inspired monitoring dashboard on port 7152.
 It reads DATUM's in-process gateway, Stratum, share, hashrate, identity, and

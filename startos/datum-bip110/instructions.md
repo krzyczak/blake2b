@@ -1,8 +1,16 @@
 # DATUM BIP110 Gateway
 
-This experimental service requires Bitcoin Knots BIP110. Select the desired
-network in the node package and wait for its health check to become ready.
-StartOS wires the RPC connection automatically.
+Open **Actions → Select Bitcoin Node** and choose one backend:
+
+- **Bitcoin (official Start9 package)** uses the installed `bitcoind` Knots
+  package and its existing blockchain. Its RPC cookie is mounted read-only.
+- **Bitcoin Knots BIP110 (lab package)** uses the separate
+  `bitcoin-bip110` package and whichever lab or test network it selects.
+
+StartOS requires only the selected dependency and wires its live RPC bridge
+address automatically. Switching does not move, copy, resync, or delete either
+node's blockchain data. The selected package must support the BIP110 template
+rules used by this DATUM build.
 
 Open the service's Interfaces page and copy the BIP110 Stratum address. On the
 Mac that runs the miner, use:
@@ -42,7 +50,8 @@ new solo-mined coinbase transactions. This is independent of the Knots
 Use **Actions → Set Solo Payout Address** to replace the disposable default
 address with an address whose private key you control. For Testnet4 use a
 Testnet address, normally beginning with `m`, `n`, `2`, or `tb1`. This Maveth
-revision renders those Testnet prefixes correctly in the dashboard.
+revision renders those Testnet prefixes correctly in the dashboard. Set a
+mainnet address before mining against the official mainnet node.
 
 Mempool explorers identify miners by matching coinbase tags or payout
 addresses against their own pool registry. Your tag will be visible in the raw

@@ -1,5 +1,10 @@
 import { setupManifest } from '@start9labs/start-sdk'
-import { bitcoinDependencyDescription, long, short } from './i18n'
+import {
+  bitcoinBip110DependencyDescription,
+  bitcoinDependencyDescription,
+  long,
+  short,
+} from './i18n'
 
 export const manifest = setupManifest({
   id: 'datum-bip110',
@@ -11,7 +16,7 @@ export const manifest = setupManifest({
   marketingUrl: 'https://github.com/Maveth/datum_gateway/tree/bip110-pow-v2',
   donationUrl: null,
   description: { short, long },
-  volumes: ['main'],
+  volumes: ['main', 'startos'],
   images: {
     datum: {
       source: {
@@ -28,11 +33,19 @@ export const manifest = setupManifest({
   },
   dependencies: {
     'bitcoin-bip110': {
-      description: bitcoinDependencyDescription,
-      optional: false,
+      description: bitcoinBip110DependencyDescription,
+      optional: true,
       metadata: {
         title: 'Bitcoin Knots BIP110',
         icon: 'https://raw.githubusercontent.com/Start9Labs/bitcoin-core-startos/51db7e317f48151a75b270dff49039b397048c80/dep-icon.svg',
+      },
+    },
+    bitcoind: {
+      description: bitcoinDependencyDescription,
+      optional: true,
+      metadata: {
+        title: 'Bitcoin',
+        icon: 'https://raw.githubusercontent.com/Start9Labs/bitcoin-knots-startos/refs/heads/29.x/dep-icon.svg',
       },
     },
   },
