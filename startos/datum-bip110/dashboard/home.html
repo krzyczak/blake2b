@@ -1791,16 +1791,6 @@
         var h = rect.height;
         context.clearRect(0, 0, w, h);
 
-        context.strokeStyle = "rgba(45, 107, 58, 0.28)";
-        context.lineWidth = 1;
-        for (var row = 1; row < 4; row += 1) {
-          var y = Math.round((h / 4) * row) + 0.5;
-          context.beginPath();
-          context.moveTo(0, y);
-          context.lineTo(w, y);
-          context.stroke();
-        }
-
         if (chartHistory.length < 2) {
           empty.classList.remove("hidden");
           return;
@@ -1812,10 +1802,32 @@
         var min = Math.min.apply(Math, values);
         var range = Math.max(max - min, max * 0.12, 0.01);
         var padY = 12;
+        var axisWidth = 76;
+        var plotWidth = w - axisWidth;
+        var plotHeight = h - padY * 2;
+        var tickCount = 4;
+
+        context.font = "10px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+        context.textAlign = "right";
+        context.textBaseline = "middle";
+        context.lineWidth = 1;
+        for (var tick = 0; tick <= tickCount; tick += 1) {
+          var tickRatio = tick / tickCount;
+          var tickY = padY + plotHeight * tickRatio;
+          var tickValue = min + range * (1 - tickRatio);
+          context.strokeStyle = "rgba(45, 107, 58, 0.28)";
+          context.beginPath();
+          context.moveTo(axisWidth, Math.round(tickY) + 0.5);
+          context.lineTo(w, Math.round(tickY) + 0.5);
+          context.stroke();
+          context.fillStyle = "#78917e";
+          context.fillText(formatHashrate(tickValue), axisWidth - 10, tickY);
+        }
+
         var points = values.map(function (value, index) {
           return {
-            x: values.length === 1 ? w : index * (w / (values.length - 1)),
-            y: padY + (h - padY * 2) * (1 - ((value - min) / range))
+            x: values.length === 1 ? w : axisWidth + index * (plotWidth / (values.length - 1)),
+            y: padY + plotHeight * (1 - ((value - min) / range))
           };
         });
 
@@ -1827,8 +1839,8 @@
           if (index === 0) context.moveTo(point.x, point.y);
           else context.lineTo(point.x, point.y);
         });
-        context.lineTo(w, h);
-        context.lineTo(0, h);
+        context.lineTo(w, padY + plotHeight);
+        context.lineTo(axisWidth, padY + plotHeight);
         context.closePath();
         context.fillStyle = gradient;
         context.fill();
