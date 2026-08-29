@@ -33,7 +33,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
       sigtermTimeout: 120_000,
     },
     ready: {
-      display: i18n('Bitcoin Knots BIP110'),
+      display: i18n('Bitcoin Blake2b Lab'),
       fn: async () => {
         try {
           const result = await bitcoindSub.exec([

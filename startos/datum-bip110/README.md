@@ -1,4 +1,4 @@
-# DATUM BIP110 Gateway for StartOS
+# DATUM Blake2b Lab for StartOS
 
 Experimental StartOS wrapper for Maveth's BLAKE2b DATUM Gateway branch, pinned
 to commit `e82d7e5422cb3e425ab7f9d9cbe230b1bc7a2f11` and its verified source

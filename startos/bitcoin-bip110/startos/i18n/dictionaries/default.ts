@@ -1,7 +1,7 @@
 export const DEFAULT_LANG = 'en_US'
 
 const dict = {
-  'Bitcoin Knots BIP110': 0,
+  'Bitcoin Blake2b Lab': 0,
   'Bitcoin RPC is starting': 1,
   'Bootstrapping dummy regtest blocks': 2,
   'Ready for mining on ${network} at height ${height}': 3,

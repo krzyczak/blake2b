@@ -1,4 +1,4 @@
-# Bitcoin Knots BIP110
+# Bitcoin Blake2b Lab
 
 This experimental package runs Bitcoin Knots
 `v29.4.1.knots20260508rc3`. Open **Actions → Select Network** to choose the
@@ -31,7 +31,7 @@ to the coinbase, and the miner receives the finished BIP110 job. It is a node
 setting, not the explorer-visible mining identity and not a miner command-line
 option.
 
-To mine against this node, install and start DATUM BIP110 Gateway and connect
+To mine against this node, install and start DATUM Blake2b Lab and connect
 the Apple miner to its Stratum interface using `--sia`. The node itself does
 not speak Stratum; the gateway translates RPC block templates into the
 Sia-style BLAKE2b jobs accepted by that mode. `--datum` is only for the older

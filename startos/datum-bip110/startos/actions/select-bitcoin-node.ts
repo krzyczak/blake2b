@@ -13,7 +13,7 @@ const bitcoinNodeInputSpec = sdk.InputSpec.of({
     description: i18n('Select the Bitcoin node that supplies mining work.'),
     values: {
       bitcoind: i18n('Bitcoin (official Start9 package)'),
-      'bitcoin-bip110': i18n('Bitcoin Knots BIP110 (lab package)'),
+      'bitcoin-bip110': i18n('Bitcoin Blake2b Lab'),
     },
     default: defaultBitcoinNodeBackend,
   }),

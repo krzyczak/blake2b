@@ -8,7 +8,7 @@ import {
 
 export const manifest = setupManifest({
   id: 'datum-bip110',
-  title: 'DATUM BIP110 Gateway',
+  title: 'DATUM Blake2b Lab',
   license: 'MIT',
   packageRepo: 'https://github.com/krzyczak/blake2b',
   upstreamRepo:
@@ -36,7 +36,7 @@ export const manifest = setupManifest({
       description: bitcoinBip110DependencyDescription,
       optional: true,
       metadata: {
-        title: 'Bitcoin Knots BIP110',
+        title: 'Bitcoin Blake2b Lab',
         icon: 'https://raw.githubusercontent.com/Start9Labs/bitcoin-core-startos/51db7e317f48151a75b270dff49039b397048c80/dep-icon.svg',
       },
     },

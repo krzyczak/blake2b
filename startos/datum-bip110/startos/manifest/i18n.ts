@@ -4,7 +4,7 @@ export const short = {
 
 export const long = {
   en_US:
-    'Pinned Maveth DATUM Gateway build with integrated BLAKE2b header-v2 and activation-headline support. It can use the official Start9 Bitcoin package or the companion Bitcoin Knots BIP110 lab package and presents a Sia-style raw Stratum TCP endpoint for the Apple Silicon miner.',
+    'Pinned Maveth DATUM Gateway build with integrated BLAKE2b header-v2 and activation-headline support. It can use the official Start9 Bitcoin package or the companion Bitcoin Blake2b Lab package and presents a Sia-style raw Stratum TCP endpoint for the Apple Silicon miner.',
 }
 
 export const bitcoinBip110DependencyDescription = {

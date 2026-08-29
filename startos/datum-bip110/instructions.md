@@ -1,10 +1,10 @@
-# DATUM BIP110 Gateway
+# DATUM Blake2b Lab
 
 Open **Actions → Select Bitcoin Node** and choose one backend:
 
 - **Bitcoin (official Start9 package)** uses the installed `bitcoind` Knots
   package and its existing blockchain. Its RPC cookie is mounted read-only.
-- **Bitcoin Knots BIP110 (lab package)** uses the separate
+- **Bitcoin Blake2b Lab** uses the separate
   `bitcoin-bip110` package and whichever lab or test network it selects.
 
 StartOS requires only the selected dependency and wires its live RPC bridge

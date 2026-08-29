@@ -2,9 +2,9 @@
 
 This directory contains three StartOS SDK 2.0 packages:
 
-- `bitcoin-bip110`: Bitcoin Knots RC3 with selectable dummy, testnet4,
+- `bitcoin-bip110`: Bitcoin Blake2b Lab, using Bitcoin Knots RC3 with selectable dummy, testnet4,
   signet, and regtest modes.
-- `datum-bip110`: Maveth's matching BLAKE2b DATUM gateway.
+- `datum-bip110`: DATUM Blake2b Lab, using Maveth's matching BLAKE2b gateway.
 - `mempool-guide`: the x86_64 mempool.guide/Retropex explorer, packaged under
   a separate service id so it can coexist with Start9's official Mempool.
 
@@ -29,8 +29,8 @@ The repository workflow `.github/workflows/startos-packages.yml` builds all
 installable artifacts on GitHub-hosted runners, including Mempool Guide for
 x86_64.
 
-- Bitcoin Knots BIP110 for x86_64 and aarch64
-- DATUM BIP110 Gateway for x86_64 and aarch64
+- Bitcoin Blake2b Lab for x86_64 and aarch64
+- DATUM Blake2b Lab for x86_64 and aarch64
 - Mempool Guide for x86_64
 
 Push this repository to GitHub, open **Actions**, select **Build StartOS
@@ -47,7 +47,7 @@ sideload packages. It does not publish them to a registry.
    turn green. Testnet4 and signet must synchronize first.
 3. Sideload and start the matching `datum-bip110` package. StartOS installs the
    declared Bitcoin dependency and wires RPC over its internal bridge.
-4. In DATUM BIP110 Gateway's Interfaces page, copy the BIP110 Stratum address.
+4. In DATUM Blake2b Lab's Interfaces page, copy the BIP110 Stratum address.
 5. On the Apple Silicon Mac, run:
 
    ```sh

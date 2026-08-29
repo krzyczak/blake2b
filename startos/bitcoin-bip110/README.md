@@ -1,4 +1,4 @@
-# Bitcoin Knots BIP110 for StartOS
+# Bitcoin Blake2b Lab for StartOS
 
 Experimental StartOS package pinned to Bitcoin Knots tag
 `v29.4.1.knots20260508rc3`, peeled commit

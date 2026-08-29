@@ -3,7 +3,7 @@ import { long, short } from './i18n'
 
 export const manifest = setupManifest({
   id: 'bitcoin-bip110',
-  title: 'Bitcoin Knots BIP110',
+  title: 'Bitcoin Blake2b Lab',
   license: 'MIT',
   packageRepo: 'https://github.com/krzyczak/blake2b',
   upstreamRepo:
