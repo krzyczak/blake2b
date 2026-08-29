@@ -68,6 +68,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
         DATUM_POOL_ADDRESS:
           miningSettings?.payoutAddress ?? defaultPayoutAddress,
         DATUM_DASHBOARD_ADMIN_PASSWORD: dashboardPassword,
+        DATUM_NODE_PACKAGE_ID: bitcoinNode.packageId,
         ...(bitcoinNode.cookieFile
           ? { DATUM_RPC_COOKIE_FILE: bitcoinNode.cookieFile }
           : {

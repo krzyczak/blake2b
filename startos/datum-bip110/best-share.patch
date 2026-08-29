@@ -1,8 +1,28 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 3875a94..64e8f33 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -25,6 +25,7 @@ add_executable(datum_gateway
+ 	src/datum_gateway.c
+ 	src/datum_jsonrpc.c
+ 	src/datum_logger.c
++	src/datum_mining_history.c
+ 	src/datum_pow.c
+ 	src/datum_protocol.c
+ 	src/datum_queue.c
 diff --git a/src/datum_api.c b/src/datum_api.c
-index cb16167..b3a13d8 100644
+index cb16167..3635244 100644
 --- a/src/datum_api.c
 +++ b/src/datum_api.c
-@@ -75,6 +75,9 @@ const char *cbnames[] = {
+@@ -57,6 +57,7 @@
+ #include "datum_stratum.h"
+ #include "datum_sockets.h"
+ #include "datum_protocol.h"
++#include "datum_mining_history.h"
+ 
+ #include "web_resources.h"
+ 
+@@ -75,6 +76,9 @@ const char *cbnames[] = {
  
  typedef struct MHD_Response *(*create_response_func_t)();
  
@@ -12,7 +32,7 @@ index cb16167..b3a13d8 100644
  static struct MHD_Response *datum_api_create_empty_mhd_response() {
  	return MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT);
  }
-@@ -105,6 +108,65 @@ void datum_api_var_STRATUM_SHARES_REJECTED(char *buffer, size_t buffer_size, con
+@@ -105,6 +109,85 @@ void datum_api_var_STRATUM_SHARES_REJECTED(char *buffer, size_t buffer_size, con
  		__atomic_load_n(&stratum_client_rejected_share_count, __ATOMIC_RELAXED),
  		__atomic_load_n(&stratum_client_rejected_share_diff, __ATOMIC_RELAXED));
  }
@@ -22,19 +42,45 @@ index cb16167..b3a13d8 100644
 +	return json_real((double)value);
 +}
 +
++static int datum_api_send_json(struct MHD_Connection *connection, json_t *root) {
++	char *output;
++	struct MHD_Response *response;
++
++	if (!root) return datum_api_do_error(connection, MHD_HTTP_INTERNAL_SERVER_ERROR);
++	output = json_dumps(root, JSON_COMPACT);
++	json_decref(root);
++	if (!output) return datum_api_do_error(connection, MHD_HTTP_INTERNAL_SERVER_ERROR);
++
++	response = MHD_create_response_from_buffer(strlen(output), output, MHD_RESPMEM_MUST_FREE);
++	if (!response) {
++		free(output);
++		return MHD_NO;
++	}
++	MHD_add_response_header(response, "Content-Type", "application/json");
++	return datum_api_submit_uncached_response(connection, MHD_HTTP_OK, response);
++}
++
 +static int datum_api_best_shares(struct MHD_Connection *connection) {
 +	json_t *root = json_object();
 +	json_t *clients = json_array();
++	json_t *history = datum_mining_history_summary_json();
 +	char client_id[32];
++	uint64_t global_best = __atomic_load_n(
++		&stratum_client_best_share_diff,
++		__ATOMIC_RELAXED
++	);
++	const uint64_t persisted_best = datum_mining_history_best_share();
 +
-+	if (!root || !clients) {
++	if (!root || !clients || !history) {
 +		json_decref(root);
 +		json_decref(clients);
++		json_decref(history);
 +		return datum_api_do_error(connection, MHD_HTTP_INTERNAL_SERVER_ERROR);
 +	}
 +
-+	json_object_set_new(root, "global_best", datum_api_json_u64(
-+		__atomic_load_n(&stratum_client_best_share_diff, __ATOMIC_RELAXED)));
++	if (persisted_best > global_best) global_best = persisted_best;
++	json_object_set_new(root, "global_best", datum_api_json_u64(global_best));
++	json_object_set_new(root, "history", history);
 +	json_object_set_new(root, "clients", clients);
 +
 +	if (global_stratum_app) {
@@ -62,23 +108,17 @@ index cb16167..b3a13d8 100644
 +		}
 +	}
 +
-+	char *output = json_dumps(root, JSON_COMPACT);
-+	json_decref(root);
-+	if (!output) return datum_api_do_error(connection, MHD_HTTP_INTERNAL_SERVER_ERROR);
++	return datum_api_send_json(connection, root);
++}
 +
-+	struct MHD_Response *response = MHD_create_response_from_buffer(strlen(output), output, MHD_RESPMEM_MUST_FREE);
-+	if (!response) {
-+		free(output);
-+		return MHD_NO;
-+	}
-+	MHD_add_response_header(response, "Content-Type", "application/json");
-+	return datum_api_submit_uncached_response(connection, MHD_HTTP_OK, response);
++static int datum_api_mined_blocks(struct MHD_Connection *connection) {
++	return datum_api_send_json(connection, datum_mining_history_blocks_json());
 +}
 +
  void datum_api_var_DATUM_SHARES_ACCEPTED(char *buffer, size_t buffer_size, const T_DATUM_API_DASH_VARS *vardata) {
  	(void)vardata;
  	if (!datum_config.datum_pool_host[0]) {
-@@ -918,7 +980,7 @@ int datum_api_client_dashboard(struct MHD_Connection *connection) {
+@@ -918,7 +1001,7 @@ int datum_api_client_dashboard(struct MHD_Connection *connection) {
  		return MHD_YES;
  	}
  	
@@ -87,7 +127,7 @@ index cb16167..b3a13d8 100644
  	
  	for (j = 0; j < max_threads; ++j) {
  		for(ii=0;ii<global_stratum_app->max_clients_thread;ii++) {
-@@ -943,6 +1005,7 @@ int datum_api_client_dashboard(struct MHD_Connection *connection) {
+@@ -943,6 +1026,7 @@ int datum_api_client_dashboard(struct MHD_Connection *connection) {
  					
  					sz += snprintf(&output[sz], max_sz-1-sz, "<TD>%"PRIu64"</TD>", m->current_diff);
  					sz += snprintf(&output[sz], max_sz-1-sz, "<TD>%"PRIu64" (%"PRIu64")</TD>", m->share_diff_accepted, m->share_count_accepted);
@@ -95,7 +135,7 @@ index cb16167..b3a13d8 100644
  					
  					hr = 0.0;
  					if (m->share_diff_accepted > 0) {
-@@ -974,7 +1037,7 @@ int datum_api_client_dashboard(struct MHD_Connection *connection) {
+@@ -974,7 +1058,7 @@ int datum_api_client_dashboard(struct MHD_Connection *connection) {
  					sz += strncpy_html_escape(&output[sz], m->useragent, max_sz-1-sz);
  					sz += snprintf(&output[sz], max_sz-1-sz, "</TD>");
  				} else {
@@ -104,21 +144,779 @@ index cb16167..b3a13d8 100644
  				}
  				
  				sz += snprintf(&output[sz], max_sz-1-sz, "<TD><button name='kill_client' value='%d_%d_%lu_%lu' onclick=\"sendPostRequest('/cmd', {cmd:'kill_client',tid:%d,cid:%d,t:%lu,id:%lu}); return false;\">Kick</button></TD></TR>", j, ii, (unsigned long)m->connect_tsms, (unsigned long)m->unique_id, j, ii, (unsigned long)m->connect_tsms, (unsigned long)m->unique_id);
-@@ -1813,6 +1876,9 @@ enum MHD_Result datum_api_answer(void *cls, struct MHD_Connection *connection, c
+@@ -1797,7 +1881,8 @@ enum MHD_Result datum_api_answer(void *cls, struct MHD_Connection *connection, c
+ 	if (user) MHD_free(user);
+ 	if (pass) MHD_free(pass);
+ 	
+-	if (int_method == 1 && url[0] == '/' && url[1] == 0) {
++	if (int_method == 1 &&
++	    ((!strcmp(url, "/")) || (!strcmp(url, "/mined-blocks")))) {
+ 		// homepage
+ 		return datum_api_homepage(connection);
+ 	}
+@@ -1813,6 +1898,12 @@ enum MHD_Result datum_api_answer(void *cls, struct MHD_Connection *connection, c
  		}
  		
  		case 'a': {
 +			if (int_method == 1 && !strcmp(url, "/api/best-shares")) {
 +				return datum_api_best_shares(connection);
 +			}
++			if (int_method == 1 && !strcmp(url, "/api/mined-blocks")) {
++				return datum_api_mined_blocks(connection);
++			}
  			if (!strcmp(url, "/assets/icons/datum_logo.svg")) {
  				return datum_api_asset(connection, "image/svg+xml", www_assets_icons_datum_logo_svg, www_assets_icons_datum_logo_svg_sz, www_assets_icons_datum_logo_svg_etag);
  			} else if (!strcmp(url, "/assets/icons/favicon.ico")) {
+diff --git a/src/datum_blocktemplates.c b/src/datum_blocktemplates.c
+index d38496c..96af1af 100644
+--- a/src/datum_blocktemplates.c
++++ b/src/datum_blocktemplates.c
+@@ -52,6 +52,7 @@
+ #include "datum_utils.h"
+ #include "datum_blocktemplates.h"
+ #include "datum_conf.h"
++#include "datum_mining_history.h"
+ #include "datum_stratum.h"
+ #include "datum_pow.h"
+ 
+@@ -646,6 +647,10 @@ void *datum_gateway_template_thread(void *args) {
+ 				
+ 				if (t) {
+ 					datum_blocktemplates_error = NULL;
++					datum_mining_history_select_chain(
++						tcurl,
++						t->header_version >= 2 ? "blake2b" : "sha256d"
++					);
+ 					DLOG_DEBUG("height: %lu / value: %"PRIu64, (unsigned long)t->height, t->coinbasevalue);
+ 					DLOG_DEBUG("--- prevhash: %s", t->previousblockhash);
+ 					DLOG_DEBUG("--- txn_count: %u / sigops: %u / weight: %u / size: %u", t->txn_count, t->txn_total_sigops, t->txn_total_weight, t->txn_total_size);
+diff --git a/src/datum_conf.c b/src/datum_conf.c
+index 24c8871..d6cc6f1 100644
+--- a/src/datum_conf.c
++++ b/src/datum_conf.c
+@@ -137,6 +137,10 @@ const T_DATUM_CONFIG_ITEM datum_config_options[] = {
+ 	{ .var_type = DATUM_CONF_STRING, 	.category = "mining", 		.name = "pow_algorithm",			.description = "PoW algorithm: auto (follow GBT rules, including !blake2b), blake2b (BLAKE2b / BLAKE2b-sia header v2), or sha256d",
+ 		.example_default = true,
+ 		.required = false, .ptr = datum_config.mining_pow_algorithm,				.default_string[0] = "auto", .max_string_len = sizeof(datum_config.mining_pow_algorithm) },
++	{ .var_type = DATUM_CONF_STRING, 	.category = "mining", 		.name = "history_file",			.description = "Persistent JSON file for chain-scoped best shares and accepted blocks",
++		.required = false, .ptr = datum_config.mining_history_file,				.default_string[0] = "", .max_string_len = sizeof(datum_config.mining_history_file) },
++	{ .var_type = DATUM_CONF_STRING, 	.category = "mining", 		.name = "history_source_node",		.description = "Node package identifier stored as mining-history provenance",
++		.required = false, .ptr = datum_config.mining_history_source_node,		.default_string[0] = "", .max_string_len = sizeof(datum_config.mining_history_source_node) },
+ 	
+ 	// API/dashboard
+ 	{ .var_type = DATUM_CONF_STRING, 	.category = "api",	 		.name = "admin_password",			.description = "API password for actions/changes (username 'admin'; disabled if blank)",
+diff --git a/src/datum_conf.h b/src/datum_conf.h
+index cf81199..2153a9c 100644
+--- a/src/datum_conf.h
++++ b/src/datum_conf.h
+@@ -134,6 +134,8 @@ typedef struct {
+ 	char mining_save_submitblocks_dir[256];
+ 	bool mining_allow_hasher_time_rolling;
+ 	char mining_pow_algorithm[16];
++	char mining_history_file[1024];
++	char mining_history_source_node[128];
+ 	int coinbase_unique_id;
+ 	
+ 	char api_admin_password[72];
+diff --git a/src/datum_mining_history.c b/src/datum_mining_history.c
+new file mode 100644
+index 0000000..1f56a81
+--- /dev/null
++++ b/src/datum_mining_history.c
+@@ -0,0 +1,643 @@
++/*
++ * DATUM Gateway persistent mining history.
++ */
++
++#include <errno.h>
++#include <inttypes.h>
++#include <limits.h>
++#include <math.h>
++#include <pthread.h>
++#include <stdbool.h>
++#include <stdint.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <time.h>
++#include <unistd.h>
++
++#include <jansson.h>
++
++#include "datum_conf.h"
++#include "datum_jsonrpc.h"
++#include "datum_logger.h"
++#include "datum_mining_history.h"
++
++#define DATUM_MINING_HISTORY_SCHEMA_VERSION 1
++
++static pthread_mutex_t history_lock = PTHREAD_MUTEX_INITIALIZER;
++static json_t *history_root;
++static json_t *history_chain;
++static char history_chain_id[160];
++static bool history_loaded;
++
++static json_t *history_json_u64(const uint64_t value) {
++	if (value <= INT64_MAX) return json_integer((json_int_t)value);
++	return json_real((double)value);
++}
++
++static uint64_t history_json_get_u64(json_t *value) {
++	if (json_is_integer(value)) {
++		const json_int_t number = json_integer_value(value);
++		return number > 0 ? (uint64_t)number : 0;
++	}
++	if (json_is_real(value)) {
++		const double number = json_real_value(value);
++		if (number >= (double)UINT64_MAX) return UINT64_MAX;
++		return number > 0 ? (uint64_t)number : 0;
++	}
++	return 0;
++}
++
++static char *history_timestamp(const uint64_t unix_time, char output[32]) {
++	time_t raw = (time_t)unix_time;
++	struct tm utc;
++
++	if (!gmtime_r(&raw, &utc)) {
++		output[0] = 0;
++		return output;
++	}
++	strftime(output, 32, "%Y-%m-%dT%H:%M:%SZ", &utc);
++	return output;
++}
++
++static void history_hash_hex(const uint8_t hash[32], char output[65]) {
++	static const char digits[] = "0123456789abcdef";
++	int i;
++
++	for (i = 0; i < 32; ++i) {
++		const uint8_t byte = hash[31 - i];
++		output[i * 2] = digits[byte >> 4];
++		output[(i * 2) + 1] = digits[byte & 0x0f];
++	}
++	output[64] = 0;
++}
++
++static json_t *history_new_root(void) {
++	json_t *root = json_object();
++	if (!root) return NULL;
++	json_object_set_new(root, "schema_version", json_integer(DATUM_MINING_HISTORY_SCHEMA_VERSION));
++	json_object_set_new(root, "active_chain_id", json_null());
++	json_object_set_new(root, "chains", json_object());
++	return root;
++}
++
++static void history_load_locked(void) {
++	json_error_t error;
++	json_t *chains;
++
++	if (history_loaded) return;
++	history_loaded = true;
++
++	if (datum_config.mining_history_file[0]) {
++		history_root = json_load_file(datum_config.mining_history_file, 0, &error);
++		if (!history_root && errno != ENOENT) {
++			DLOG_ERROR(
++				"Could not read mining history %s: %s (line %d)",
++				datum_config.mining_history_file,
++				error.text,
++				error.line
++			);
++		}
++	}
++
++	if (!json_is_object(history_root)) {
++		json_decref(history_root);
++		history_root = history_new_root();
++	}
++	if (!history_root) return;
++
++	chains = json_object_get(history_root, "chains");
++	if (!json_is_object(chains)) {
++		json_object_set_new(history_root, "chains", json_object());
++	}
++	json_object_set_new(
++		history_root,
++		"schema_version",
++		json_integer(DATUM_MINING_HISTORY_SCHEMA_VERSION)
++	);
++}
++
++static bool history_write_locked(void) {
++	char temporary_path[sizeof(datum_config.mining_history_file) + 8];
++	char timestamp[32];
++	FILE *file;
++	bool success = false;
++
++	if (!history_root || !datum_config.mining_history_file[0]) return false;
++	if (snprintf(
++		temporary_path,
++		sizeof(temporary_path),
++		"%s.tmp",
++		datum_config.mining_history_file
++	) >= (int)sizeof(temporary_path)) {
++		DLOG_ERROR("Mining history path is too long");
++		return false;
++	}
++
++	json_object_set_new(
++		history_root,
++		"updated_at",
++		json_string(history_timestamp((uint64_t)time(NULL), timestamp))
++	);
++	file = fopen(temporary_path, "w");
++	if (!file) {
++		DLOG_ERROR("Could not open mining history temporary file: %s", strerror(errno));
++		return false;
++	}
++
++	if (json_dumpf(history_root, file, JSON_INDENT(2) | JSON_SORT_KEYS) != 0 ||
++	    fputc('\n', file) == EOF || fflush(file) != 0 || fsync(fileno(file)) != 0) {
++		DLOG_ERROR("Could not write mining history: %s", strerror(errno));
++	} else if (fclose(file) != 0) {
++		file = NULL;
++		DLOG_ERROR("Could not close mining history: %s", strerror(errno));
++	} else {
++		file = NULL;
++		if (rename(temporary_path, datum_config.mining_history_file) == 0) {
++			success = true;
++		} else {
++			DLOG_ERROR("Could not replace mining history: %s", strerror(errno));
++		}
++	}
++
++	if (file) fclose(file);
++	if (!success) remove(temporary_path);
++	return success;
++}
++
++static const char *history_explorer_template(const char *network) {
++	if (!strcmp(network, "main")) return "https://mempool.guide/block/{hash}";
++	if (!strcmp(network, "testnet4")) return "https://mempool.guide/testnet4/block/{hash}";
++	if (!strcmp(network, "test")) return "https://mempool.guide/testnet/block/{hash}";
++	if (!strcmp(network, "signet")) return "https://mempool.guide/signet/block/{hash}";
++	return NULL;
++}
++
++static json_t *history_default_share(const char *scope) {
++	json_t *share = json_object();
++	if (!share) return NULL;
++	json_object_set_new(share, "difficulty", json_null());
++	json_object_set_new(share, "share_hash", json_null());
++	json_object_set_new(share, "observed_at", json_null());
++	if (scope) json_object_set_new(share, "scope", json_string(scope));
++	json_object_set_new(share, "complete", json_false());
++	return share;
++}
++
++static json_t *history_create_chain(
++	const char *pow_algorithm,
++	const char *network,
++	const char *genesis_hash
++) {
++	json_t *chain = json_object();
++	json_t *identity = json_object();
++	json_t *explorer = json_object();
++	json_t *shares = json_object();
++	json_t *best = history_default_share("known-history");
++	json_t *since = history_default_share(NULL);
++	const char *explorer_template = history_explorer_template(network);
++
++	if (!chain || !identity || !explorer || !shares || !best || !since) goto fail;
++	json_object_set_new(identity, "pow_algorithm", json_string(pow_algorithm));
++	json_object_set_new(identity, "network", json_string(network));
++	json_object_set_new(identity, "genesis_hash", json_string(genesis_hash));
++	json_object_set_new(explorer, "name", json_string("mempool.guide"));
++	if (explorer_template) {
++		json_object_set_new(explorer, "block_url_template", json_string(explorer_template));
++	} else {
++		json_object_set_new(explorer, "block_url_template", json_null());
++	}
++	json_object_set_new(
++		since,
++		"incomplete_reason",
++		json_string("tracking started without prior post-block share history")
++	);
++	json_object_set_new(shares, "best", best);
++	json_object_set_new(shares, "best_since_last_block", since);
++	json_object_set_new(chain, "identity", identity);
++	json_object_set_new(chain, "explorer", explorer);
++	json_object_set_new(chain, "last_node", json_null());
++	json_object_set_new(chain, "shares", shares);
++	json_object_set_new(chain, "blocks", json_array());
++	return chain;
++
++fail:
++	json_decref(chain);
++	json_decref(identity);
++	json_decref(explorer);
++	json_decref(shares);
++	json_decref(best);
++	json_decref(since);
++	return NULL;
++}
++
++static bool history_rpc_chain_identity(
++	CURL *curl,
++	char network[32],
++	char genesis_hash[65],
++	json_t **chain_info_out
++) {
++	json_t *response;
++	json_t *result;
++	json_t *genesis_response;
++	json_t *genesis_result;
++	const char *network_value;
++	const char *genesis_value;
++
++	response = bitcoind_json_rpc_call(
++		curl,
++		&datum_config,
++		"{\"jsonrpc\":\"1.0\",\"id\":\"datum-history\",\"method\":\"getblockchaininfo\",\"params\":[]}"
++	);
++	if (!response) return false;
++	result = json_object_get(response, "result");
++	network_value = json_string_value(json_object_get(result, "chain"));
++	if (!network_value || strlen(network_value) >= 32) {
++		json_decref(response);
++		return false;
++	}
++
++	genesis_response = bitcoind_json_rpc_call(
++		curl,
++		&datum_config,
++		"{\"jsonrpc\":\"1.0\",\"id\":\"datum-history\",\"method\":\"getblockhash\",\"params\":[0]}"
++	);
++	if (!genesis_response) {
++		json_decref(response);
++		return false;
++	}
++	genesis_result = json_object_get(genesis_response, "result");
++	genesis_value = json_string_value(genesis_result);
++	if (!genesis_value || strlen(genesis_value) != 64) {
++		json_decref(genesis_response);
++		json_decref(response);
++		return false;
++	}
++
++	strcpy(network, network_value);
++	strcpy(genesis_hash, genesis_value);
++	*chain_info_out = json_incref(result);
++	json_decref(genesis_response);
++	json_decref(response);
++	return true;
++}
++
++bool datum_mining_history_select_chain(CURL *curl, const char *pow_algorithm) {
++	char network[32];
++	char genesis_hash[65];
++	char chain_id[160];
++	char timestamp[32];
++	json_t *chain_info = NULL;
++	json_t *chains;
++	json_t *chain;
++	json_t *last_node;
++	json_t *value;
++	const char *tip_hash;
++	bool created = false;
++
++	if (!curl || !pow_algorithm || !pow_algorithm[0]) return false;
++	pthread_mutex_lock(&history_lock);
++	if (history_chain && !strncmp(history_chain_id, pow_algorithm, strlen(pow_algorithm)) &&
++	    history_chain_id[strlen(pow_algorithm)] == ':') {
++		pthread_mutex_unlock(&history_lock);
++		return true;
++	}
++	pthread_mutex_unlock(&history_lock);
++
++	if (!history_rpc_chain_identity(curl, network, genesis_hash, &chain_info)) {
++		DLOG_WARN("Could not identify the node chain for mining history");
++		return false;
++	}
++	if (snprintf(
++		chain_id,
++		sizeof(chain_id),
++		"%s:%s:%s",
++		pow_algorithm,
++		network,
++		genesis_hash
++	) >= (int)sizeof(chain_id)) {
++		json_decref(chain_info);
++		return false;
++	}
++
++	pthread_mutex_lock(&history_lock);
++	history_load_locked();
++	if (!history_root) goto fail;
++	chains = json_object_get(history_root, "chains");
++	chain = json_object_get(chains, chain_id);
++	if (!json_is_object(chain)) {
++		chain = history_create_chain(pow_algorithm, network, genesis_hash);
++		if (!chain) goto fail;
++		json_object_set_new(chains, chain_id, chain);
++		created = true;
++	}
++
++	last_node = json_object();
++	if (!last_node) goto fail;
++	json_object_set_new(
++		last_node,
++		"package_id",
++		datum_config.mining_history_source_node[0]
++			? json_string(datum_config.mining_history_source_node)
++			: json_null()
++	);
++	json_object_set_new(
++		last_node,
++		"observed_at",
++		json_string(history_timestamp((uint64_t)time(NULL), timestamp))
++	);
++	value = json_object_get(chain_info, "blocks");
++	json_object_set_new(
++		last_node,
++		"tip_height",
++		json_is_integer(value) ? json_incref(value) : json_null()
++	);
++	tip_hash = json_string_value(json_object_get(chain_info, "bestblockhash"));
++	json_object_set_new(last_node, "tip_hash", tip_hash ? json_string(tip_hash) : json_null());
++	value = json_object_get(chain_info, "pruned");
++	json_object_set_new(
++		last_node,
++		"pruned",
++		json_is_boolean(value) ? json_incref(value) : json_false()
++	);
++	value = json_object_get(chain_info, "pruneheight");
++	json_object_set_new(
++		last_node,
++		"prune_height",
++		json_is_integer(value) ? json_incref(value) : json_null()
++	);
++	json_object_set_new(chain, "last_node", last_node);
++	json_object_set_new(history_root, "active_chain_id", json_string(chain_id));
++	history_chain = chain;
++	strcpy(history_chain_id, chain_id);
++	history_write_locked();
++	pthread_mutex_unlock(&history_lock);
++	json_decref(chain_info);
++	DLOG_INFO(
++		"Mining history selected %s%s",
++		chain_id,
++		created ? " (new record)" : ""
++	);
++	return true;
++
++fail:
++	pthread_mutex_unlock(&history_lock);
++	json_decref(chain_info);
++	return false;
++}
++
++static json_t *history_share_record_locked(const char *name) {
++	json_t *shares;
++	json_t *record;
++
++	if (!history_chain) return NULL;
++	shares = json_object_get(history_chain, "shares");
++	if (!json_is_object(shares)) {
++		shares = json_object();
++		if (!shares) return NULL;
++		json_object_set_new(history_chain, "shares", shares);
++	}
++	record = json_object_get(shares, name);
++	if (!json_is_object(record)) {
++		record = history_default_share(!strcmp(name, "best") ? "known-history" : NULL);
++		if (!record) return NULL;
++		json_object_set_new(shares, name, record);
++	}
++	return record;
++}
++
++static bool history_update_share_locked(
++	json_t *record,
++	const uint64_t difficulty,
++	const char *share_hash,
++	const char *observed_at
++) {
++	uint64_t current;
++	if (!record) return false;
++	current = history_json_get_u64(json_object_get(record, "difficulty"));
++	if (difficulty <= current) return false;
++	json_object_set_new(record, "difficulty", history_json_u64(difficulty));
++	json_object_set_new(record, "share_hash", json_string(share_hash));
++	json_object_set_new(record, "observed_at", json_string(observed_at));
++	return true;
++}
++
++uint64_t datum_mining_history_best_share(void) {
++	uint64_t difficulty = 0;
++	json_t *record;
++
++	pthread_mutex_lock(&history_lock);
++	record = history_share_record_locked("best");
++	if (record) difficulty = history_json_get_u64(json_object_get(record, "difficulty"));
++	pthread_mutex_unlock(&history_lock);
++	return difficulty;
++}
++
++void datum_mining_history_note_share(
++	const uint64_t difficulty,
++	const uint8_t share_hash[32],
++	const bool include_since_last_block
++) {
++	char hash_hex[65];
++	char timestamp[32];
++	json_t *best;
++	json_t *since;
++	bool changed = false;
++
++	if (!difficulty || !share_hash) return;
++	history_hash_hex(share_hash, hash_hex);
++	history_timestamp((uint64_t)time(NULL), timestamp);
++
++	pthread_mutex_lock(&history_lock);
++	best = history_share_record_locked("best");
++	if (best) changed = history_update_share_locked(best, difficulty, hash_hex, timestamp);
++	if (include_since_last_block) {
++		since = history_share_record_locked("best_since_last_block");
++		if (since && history_update_share_locked(since, difficulty, hash_hex, timestamp)) {
++			changed = true;
++		}
++	}
++	if (changed) history_write_locked();
++	pthread_mutex_unlock(&history_lock);
++}
++
++static bool history_has_block_locked(json_t *blocks, const char *block_hash) {
++	size_t index;
++	json_t *block;
++
++	json_array_foreach(blocks, index, block) {
++		const char *known_hash = json_string_value(json_object_get(block, "hash"));
++		if (known_hash && !strcmp(known_hash, block_hash)) return true;
++	}
++	return false;
++}
++
++bool datum_mining_history_note_block(
++	const char *block_hash,
++	const uint64_t height,
++	const uint64_t block_time,
++	const uint64_t network_difficulty,
++	const uint64_t share_difficulty,
++	const uint64_t reward_sats
++) {
++	char found_at[32];
++	char block_time_text[32];
++	json_t *blocks;
++	json_t *block;
++	json_t *best;
++	json_t *since;
++	bool success;
++
++	if (!block_hash || strlen(block_hash) != 64) return false;
++	history_timestamp((uint64_t)time(NULL), found_at);
++	history_timestamp(block_time, block_time_text);
++
++	pthread_mutex_lock(&history_lock);
++	if (!history_chain) {
++		pthread_mutex_unlock(&history_lock);
++		return false;
++	}
++	blocks = json_object_get(history_chain, "blocks");
++	if (!json_is_array(blocks)) {
++		blocks = json_array();
++		if (!blocks) {
++			pthread_mutex_unlock(&history_lock);
++			return false;
++		}
++		json_object_set_new(history_chain, "blocks", blocks);
++	}
++	if (history_has_block_locked(blocks, block_hash)) {
++		pthread_mutex_unlock(&history_lock);
++		return true;
++	}
++
++	block = json_object();
++	if (!block) {
++		pthread_mutex_unlock(&history_lock);
++		return false;
++	}
++	json_object_set_new(block, "hash", json_string(block_hash));
++	json_object_set_new(block, "height", history_json_u64(height));
++	json_object_set_new(block, "block_time", json_string(block_time_text));
++	json_object_set_new(block, "found_at", json_string(found_at));
++	json_object_set_new(block, "status", json_string("accepted"));
++	json_object_set_new(block, "network_difficulty", history_json_u64(network_difficulty));
++	json_object_set_new(block, "share_difficulty", history_json_u64(share_difficulty));
++	json_object_set_new(block, "reward_sats", history_json_u64(reward_sats));
++	json_object_set_new(block, "payout_address", json_string(datum_config.mining_pool_address));
++	json_object_set_new(
++		block,
++		"coinbase_tags",
++		json_pack(
++			"[s,s]",
++			datum_config.mining_coinbase_tag_primary,
++			datum_config.mining_coinbase_tag_secondary
++		)
++	);
++	json_object_set_new(
++		block,
++		"source_node_package_id",
++		datum_config.mining_history_source_node[0]
++			? json_string(datum_config.mining_history_source_node)
++			: json_null()
++	);
++	json_array_insert_new(blocks, 0, block);
++
++	best = history_share_record_locked("best");
++	if (best) history_update_share_locked(best, share_difficulty, block_hash, found_at);
++	since = history_share_record_locked("best_since_last_block");
++	if (since) {
++		json_object_set_new(since, "difficulty", json_null());
++		json_object_set_new(since, "share_hash", json_null());
++		json_object_set_new(since, "observed_at", json_null());
++		json_object_set_new(since, "reset_at", json_string(found_at));
++		json_object_set_new(since, "reset_by_block_hash", json_string(block_hash));
++		json_object_set_new(since, "complete", json_true());
++		json_object_del(since, "incomplete_reason");
++	}
++	success = history_write_locked();
++	pthread_mutex_unlock(&history_lock);
++	return success;
++}
++
++json_t *datum_mining_history_summary_json(void) {
++	json_t *summary = json_object();
++	json_t *shares;
++	json_t *blocks;
++	json_t *last_block;
++
++	if (!summary) return NULL;
++	pthread_mutex_lock(&history_lock);
++	json_object_set_new(summary, "available", json_boolean(history_chain != NULL));
++	if (!history_chain) {
++		json_object_set_new(summary, "chain_id", json_null());
++		json_object_set_new(summary, "identity", json_null());
++		json_object_set_new(summary, "explorer", json_null());
++		json_object_set_new(summary, "best", json_null());
++		json_object_set_new(summary, "best_since_last_block", json_null());
++		json_object_set_new(summary, "last_block", json_null());
++		pthread_mutex_unlock(&history_lock);
++		return summary;
++	}
++
++	json_object_set_new(summary, "chain_id", json_string(history_chain_id));
++	json_object_set_new(
++		summary,
++		"identity",
++		json_deep_copy(json_object_get(history_chain, "identity"))
++	);
++	json_object_set_new(
++		summary,
++		"explorer",
++		json_deep_copy(json_object_get(history_chain, "explorer"))
++	);
++	shares = json_object_get(history_chain, "shares");
++	json_object_set_new(summary, "best", json_deep_copy(json_object_get(shares, "best")));
++	json_object_set_new(
++		summary,
++		"best_since_last_block",
++		json_deep_copy(json_object_get(shares, "best_since_last_block"))
++	);
++	blocks = json_object_get(history_chain, "blocks");
++	last_block = json_is_array(blocks) ? json_array_get(blocks, 0) : NULL;
++	json_object_set_new(
++		summary,
++		"last_block",
++		last_block ? json_deep_copy(last_block) : json_null()
++	);
++	pthread_mutex_unlock(&history_lock);
++	return summary;
++}
++
++json_t *datum_mining_history_blocks_json(void) {
++	json_t *root = json_object();
++	json_t *blocks;
++
++	if (!root) return NULL;
++	pthread_mutex_lock(&history_lock);
++	json_object_set_new(root, "available", json_boolean(history_chain != NULL));
++	if (!history_chain) {
++		json_object_set_new(root, "chain_id", json_null());
++		json_object_set_new(root, "identity", json_null());
++		json_object_set_new(root, "explorer", json_null());
++		json_object_set_new(root, "blocks", json_array());
++		pthread_mutex_unlock(&history_lock);
++		return root;
++	}
++
++	json_object_set_new(root, "chain_id", json_string(history_chain_id));
++	json_object_set_new(
++		root,
++		"identity",
++		json_deep_copy(json_object_get(history_chain, "identity"))
++	);
++	json_object_set_new(
++		root,
++		"explorer",
++		json_deep_copy(json_object_get(history_chain, "explorer"))
++	);
++	blocks = json_object_get(history_chain, "blocks");
++	json_object_set_new(root, "blocks", json_is_array(blocks) ? json_deep_copy(blocks) : json_array());
++	pthread_mutex_unlock(&history_lock);
++	return root;
++}
+diff --git a/src/datum_mining_history.h b/src/datum_mining_history.h
+new file mode 100644
+index 0000000..3bc4929
+--- /dev/null
++++ b/src/datum_mining_history.h
+@@ -0,0 +1,31 @@
++/*
++ * Persistent mining history for the DATUM dashboard.
++ */
++
++#ifndef DATUM_MINING_HISTORY_H
++#define DATUM_MINING_HISTORY_H
++
++#include <stdbool.h>
++#include <stdint.h>
++#include <curl/curl.h>
++#include <jansson.h>
++
++bool datum_mining_history_select_chain(CURL *curl, const char *pow_algorithm);
++uint64_t datum_mining_history_best_share(void);
++void datum_mining_history_note_share(
++	uint64_t difficulty,
++	const uint8_t share_hash[32],
++	bool include_since_last_block
++);
++bool datum_mining_history_note_block(
++	const char *block_hash,
++	uint64_t height,
++	uint64_t block_time,
++	uint64_t network_difficulty,
++	uint64_t share_difficulty,
++	uint64_t reward_sats
++);
++json_t *datum_mining_history_summary_json(void);
++json_t *datum_mining_history_blocks_json(void);
++
++#endif
 diff --git a/src/datum_stratum.c b/src/datum_stratum.c
-index 04e9074..16c785c 100644
+index 04e9074..0f4258a 100644
 --- a/src/datum_stratum.c
 +++ b/src/datum_stratum.c
-@@ -82,6 +82,7 @@ bool need_coinbaser_rwlocks_init_done = false;
+@@ -59,6 +59,7 @@
+ #include "datum_submitblock.h"
+ #include "datum_protocol.h"
+ #include "datum_pow.h"
++#include "datum_mining_history.h"
+ 
+ T_DATUM_SOCKET_APP *global_stratum_app = NULL;
+ 
+@@ -82,6 +83,7 @@ bool need_coinbaser_rwlocks_init_done = false;
  
  uint64_t stratum_client_accepted_share_count = 0;
  uint64_t stratum_client_accepted_share_diff = 0;
@@ -126,7 +924,7 @@ index 04e9074..16c785c 100644
  uint64_t stratum_client_rejected_share_count = 0;
  uint64_t stratum_client_rejected_share_diff = 0;
  
-@@ -960,6 +961,36 @@ static bool stratum_job_is_blake2b(const T_DATUM_STRATUM_JOB *j) {
+@@ -960,6 +962,42 @@ static bool stratum_job_is_blake2b(const T_DATUM_STRATUM_JOB *j) {
  	return j && j->block_template && j->block_template->header_version >= 2;
  }
  
@@ -154,23 +952,108 @@ index 04e9074..16c785c 100644
 +	       !__atomic_compare_exchange_n(value, &current, candidate, false, __ATOMIC_RELAXED, __ATOMIC_RELAXED)) {}
 +}
 +
-+static void stratum_note_best_share(T_DATUM_MINER_DATA *m, const uint8_t share_hash[32]) {
++static uint64_t stratum_note_best_share(
++	T_DATUM_MINER_DATA *m,
++	const uint8_t share_hash[32],
++	const bool include_since_last_block
++) {
 +	const uint64_t difficulty = stratum_share_difficulty(share_hash);
 +	stratum_atomic_max_u64(&m->best_share_diff, difficulty);
 +	stratum_atomic_max_u64(&stratum_client_best_share_diff, difficulty);
++	datum_mining_history_note_share(difficulty, share_hash, include_since_last_block);
++	return difficulty;
 +}
 +
  static void stratum_note_share(T_DATUM_MINER_DATA *m, bool accepted, uint64_t diff) {
  	if (accepted) {
  		m->share_count_accepted++;
-@@ -1448,6 +1479,7 @@ int client_mining_submit(T_DATUM_CLIENT_DATA *c, uint64_t id, json_t *params_obj
+@@ -1027,6 +1065,7 @@ int client_mining_submit(T_DATUM_CLIENT_DATA *c, uint64_t id, json_t *params_obj
+ 	bool quickdiff = false;
+ 	bool empty_work = false;
+ 	bool was_block = false;
++	bool best_share_noted = false;
+ 	char new_notify_blockhash[65];
+ 	
+ 	// 0 = version 4 bytes
+@@ -1256,6 +1295,13 @@ int client_mining_submit(T_DATUM_CLIENT_DATA *c, uint64_t id, json_t *params_obj
+ 		ntime64 = ntime_val;
+ 		pk_u32le(block_header, 68, ntime_val);
+ 	}
++	check_time = blake2b_job
++		? datum_blake2b_share_ntime(
++			job->blake2b_time_on_wire,
++			ntime8,
++			job->block_template->header_flags
++		)
++		: ntime_val;
+ 	
+ 	// 72 - 75 = bits
+ 	memcpy(&block_header[72], &job->nbits_bin[0], sizeof(uint32_t));
+@@ -1362,6 +1408,25 @@ int client_mining_submit(T_DATUM_CLIENT_DATA *c, uint64_t id, json_t *params_obj
+ 		i = assembleBlockAndSubmit(block_header, full_cb_txn, cb->coinb1_len+12+cb->coinb2_len, job, m->sdata, new_notify_blockhash, empty_work, extranonce_bin);
+ 		if (i) {
+ 			// successfully submitted
++			const uint64_t share_difficulty = stratum_note_best_share(m, share_hash, false);
++			long double network_difficulty_value = calc_network_difficulty(job->nbits);
++			uint64_t network_difficulty;
++			if (network_difficulty_value >= (long double)UINT64_MAX) {
++				network_difficulty = UINT64_MAX;
++			} else if (network_difficulty_value > 0.0L) {
++				network_difficulty = (uint64_t)(network_difficulty_value + 0.5L);
++			} else {
++				network_difficulty = 0;
++			}
++			best_share_noted = true;
++			datum_mining_history_note_block(
++				new_notify_blockhash,
++				job->height,
++				check_time,
++				network_difficulty,
++				share_difficulty,
++				job->block_template->coinbasevalue
++			);
+ 			datum_blocktemplates_notifynew(new_notify_blockhash, job->height + 1);
+ 		}
+ 		
+@@ -1385,7 +1450,6 @@ int client_mining_submit(T_DATUM_CLIENT_DATA *c, uint64_t id, json_t *params_obj
+ 	// For a header-v2 job the node does not read the wire time as nTime: it
+ 	// adds the hasher's time-offset bytes back when the offset flag is set.
+ 	// Bound what the node will read, which also bounds hasher time rolling.
+-	check_time = blake2b_job ? datum_blake2b_share_ntime(job->blake2b_time_on_wire, ntime8, job->block_template->header_flags) : ntime_val;
+ 	if (check_time < job->block_template->mintime) {
+ 		send_rejected_time_too_old(c, id);
+ 		stratum_note_share(m, false, job_diff);
+@@ -1448,6 +1512,7 @@ int client_mining_submit(T_DATUM_CLIENT_DATA *c, uint64_t id, json_t *params_obj
  	stratum_rpc_id_clear(c);
  	
  	// update connection and gateway-local totals
-+	stratum_note_best_share(m, share_hash);
++	if (!best_share_noted) stratum_note_best_share(m, share_hash, true);
  	stratum_note_share(m, true, job_diff);
  	
  	// update since-snap totals
+@@ -2609,6 +2674,14 @@ int assembleBlockAndSubmit(uint8_t *block_header, uint8_t *coinbase_txn, size_t
+ 		DLOG_INFO("Block %s submitted to upstream node successfully!",block_hash_hex);
+ 		ret = 1;
+ 	} else {
++		json_t *result = json_object_get(r, "result");
++		const char *result_text = json_string_value(result);
++		if (result_text && !strcmp(result_text, "duplicate")) {
++			DLOG_INFO("Block %s was already accepted by the upstream node", block_hash_hex);
++			json_decref(r);
++			ret = 1;
++			goto submitblock_cleanup;
++		}
+ 		s = json_dumps(r, JSON_ENCODE_ANY);
+ 		if (!s) {
+ 			DLOG_WARN("Upstream node rejected our block! (unknown)");
+@@ -2621,6 +2694,7 @@ int assembleBlockAndSubmit(uint8_t *block_header, uint8_t *coinbase_txn, size_t
+ 	}
+ 	
+ 	// cleanup
++submitblock_cleanup:
+ 	if (free_submitblock_req) {
+ 		// let's not free until our thread is done with it
+ 		usleep(10000);
 diff --git a/src/datum_stratum.h b/src/datum_stratum.h
 index cc26979..c3d255a 100644
 --- a/src/datum_stratum.h

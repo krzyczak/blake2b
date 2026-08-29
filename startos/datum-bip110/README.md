@@ -43,12 +43,24 @@ telemetry is involved. Configuration editing is disabled, and protected detail
 pages use a generated password stored in the backed-up package volume. Retrieve
 it with the **Dashboard Credentials** StartOS action.
 
-DATUM also calculates the actual difficulty of every locally accepted share.
-The dashboard shows the best share since the gateway process started and the
-best share for each current client connection; the same data is available as
-JSON at `/api/best-shares`. Client bests reset on reconnect and the global best
-resets when DATUM restarts. This is intentionally separate from accumulated
-difficulty, which sums the assigned difficulty credited for accepted work.
+DATUM calculates the actual difficulty of every locally accepted share. It
+persists the known-history best share, best share since the last accepted
+block, and accepted block records in `/data/mining-history.json`. StartOS backs
+up that file with the package's `main` volume. The history key combines the PoW
+algorithm, node-reported network, and genesis hash. Switching between compatible
+node packages on the same chain keeps the same history; another network or PoW
+uses a separate record.
+
+The dashboard exposes this data on the Mine page and a separate **Mined
+Blocks** page. `/api/best-shares` returns the persistent summary plus live
+per-client bests. `/api/mined-blocks` returns the active chain's full recorded
+block list. Client bests still reset on reconnect. Mining history is private
+runtime data and is not bundled into the package image.
+
+The imported `best_since_last_block` is marked incomplete because older DATUM
+versions retained only one process-wide maximum. New record shares improve the
+known lower bound. The field becomes complete when DATUM accepts the next block
+and resets the post-block maximum itself.
 
 For browser interoperability, protected pages use HTTP Basic authentication
 through the StartOS HTTPS interface. The generated password is long and

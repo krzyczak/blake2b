@@ -191,6 +191,10 @@
       padding: 34px 0 42px;
     }
 
+    [hidden] {
+      display: none !important;
+    }
+
     .dashboard > *,
     .hero > * {
       min-width: 0;
@@ -492,9 +496,24 @@
       margin-top: 16px;
     }
 
+    .best-share-highlights {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(155px, auto));
+      gap: 24px;
+    }
+
     .best-share-global {
-      min-width: 190px;
+      min-width: 155px;
       text-align: right;
+    }
+
+    .best-share-global-label {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--muted);
+      font: 700 9px/1 var(--mono);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
     }
 
     .best-share-global-value {
@@ -509,6 +528,22 @@
       margin-top: 6px;
       color: var(--muted);
       font: 10px/1.3 var(--mono);
+    }
+
+    a.best-share-global-value {
+      overflow: hidden;
+      color: var(--green-soft);
+      font-size: 13px;
+      text-decoration: none;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    a.best-share-global-value:hover,
+    a.best-share-global-value:focus-visible {
+      color: var(--green);
+      text-decoration: underline;
+      outline: none;
     }
 
     .best-share-table {
@@ -572,6 +607,70 @@
       color: var(--muted);
       font: 11px/1.5 var(--mono);
       text-align: center;
+    }
+
+    .mined-blocks-panel {
+      margin-top: 16px;
+    }
+
+    .mined-block-table {
+      overflow-x: auto;
+    }
+
+    .mined-block-row {
+      display: grid;
+      min-width: 900px;
+      grid-template-columns: 110px 190px minmax(280px, 1fr) 165px 130px;
+      align-items: center;
+      border-bottom: 1px solid rgba(29, 56, 35, 0.72);
+    }
+
+    .mined-block-row:last-child {
+      border-bottom: 0;
+    }
+
+    .mined-block-header {
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.01);
+      font: 700 9px/1.3 var(--mono);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .mined-block-cell {
+      min-width: 0;
+      padding: 14px 18px;
+      color: #c8d8cb;
+      font: 11px/1.45 var(--mono);
+      overflow-wrap: anywhere;
+    }
+
+    .mined-block-cell:not(:nth-child(3)) {
+      text-align: right;
+    }
+
+    .mined-block-link {
+      color: var(--green-soft);
+      text-decoration: none;
+    }
+
+    .mined-block-link:hover,
+    .mined-block-link:focus-visible {
+      color: var(--green);
+      text-decoration: underline;
+      outline: none;
+    }
+
+    .mined-block-detail {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    .mined-block-count {
+      color: var(--green);
+      font: 760 23px/1 var(--mono);
     }
 
     .detail-list {
@@ -766,6 +865,20 @@
       .fingerprint-item:last-child {
         border-bottom: 0;
       }
+
+      .best-shares-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .best-share-highlights {
+        width: 100%;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .best-share-global {
+        text-align: left;
+      }
     }
 
     @media (max-width: 600px) {
@@ -865,6 +978,12 @@
         flex-direction: column;
       }
 
+      .best-share-highlights {
+        width: 100%;
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+
       .best-share-global {
         text-align: left;
       }
@@ -895,7 +1014,8 @@
     </div>
 
     <nav class="nav" aria-label="DATUM dashboard">
-      <a class="active" href="/" aria-current="page">Mine</a>
+      <a id="mine-nav" href="/">Mine</a>
+      <a id="blocks-nav" href="/mined-blocks">Mined Blocks</a>
       <a href="/clients">Clients</a>
       <a href="/threads">Threads</a>
       <a href="/coinbaser">Coinbase</a>
@@ -907,7 +1027,7 @@
     </div>
   </header>
 
-  <main class="shell dashboard">
+  <main class="shell dashboard" id="mine-view">
     <section class="hero" aria-labelledby="dashboard-title">
       <div>
         <p class="eyebrow">Solo lottery mining</p>
@@ -992,9 +1112,22 @@
           <span class="panel-kicker">Proof quality / live sessions</span>
           <h2 class="panel-title" id="best-shares-title">Best shares by miner</h2>
         </div>
-        <div class="best-share-global">
-          <strong class="best-share-global-value" id="global-best-share-output">—</strong>
-          <span class="best-share-global-detail" id="global-best-share-detail">since gateway start</span>
+        <div class="best-share-highlights">
+          <div class="best-share-global">
+            <span class="best-share-global-label">Best share</span>
+            <strong class="best-share-global-value" id="global-best-share-output">—</strong>
+            <span class="best-share-global-detail" id="global-best-share-detail">known history</span>
+          </div>
+          <div class="best-share-global">
+            <span class="best-share-global-label">Since last block</span>
+            <strong class="best-share-global-value" id="since-block-share-output">—</strong>
+            <span class="best-share-global-detail" id="since-block-share-detail">waiting for history</span>
+          </div>
+          <div class="best-share-global">
+            <span class="best-share-global-label">Last block</span>
+            <a class="best-share-global-value" id="last-block-link" href="#">—</a>
+            <span class="best-share-global-detail" id="last-block-detail">no recorded block</span>
+          </div>
         </div>
       </header>
       <div class="best-share-table">
@@ -1136,6 +1269,48 @@
     </footer>
   </main>
 
+  <main class="shell dashboard" id="blocks-view" hidden>
+    <section class="hero" aria-labelledby="blocks-title">
+      <div>
+        <p class="eyebrow">Persistent / chain scoped</p>
+        <h1 id="blocks-title">Mined <span>Blocks.</span></h1>
+        <p class="hero-copy">
+          Blocks accepted by the selected chain's node. History follows the chain identity,
+          not the StartOS node package used to reach it.
+        </p>
+      </div>
+      <div class="hero-meta">
+        <div class="meta-line">CHAIN <b id="blocks-chain-output">waiting for node</b></div>
+        <div class="meta-line">RECORDED <b id="blocks-count-output">0</b></div>
+      </div>
+    </section>
+
+    <section class="panel mined-blocks-panel" aria-labelledby="mined-blocks-list-title">
+      <header class="panel-head">
+        <div>
+          <span class="panel-kicker">Accepted submissions / newest first</span>
+          <h2 class="panel-title" id="mined-blocks-list-title">Block history</h2>
+        </div>
+        <button class="panel-action" id="blocks-refresh-button" type="button">Refresh</button>
+      </header>
+      <div class="mined-block-table">
+        <div class="mined-block-row mined-block-header" aria-hidden="true">
+          <span class="mined-block-cell">Height</span>
+          <span class="mined-block-cell">Time</span>
+          <span class="mined-block-cell">Block hash</span>
+          <span class="mined-block-cell">Share / target</span>
+          <span class="mined-block-cell">Reward</span>
+        </div>
+        <div id="mined-block-list" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>stored in DATUM's backed-up package volume</span>
+      <span>links open mempool.guide</span>
+    </footer>
+  </main>
+
   <div class="data-bank" aria-hidden="true">
     <span data-field="shares-accepted">${STRATUM_SHARES_ACCEPTED}</span>
     <span data-field="shares-rejected">${STRATUM_SHARES_REJECTED}</span>
@@ -1176,6 +1351,7 @@
       var lastUpdatedAt = Date.now();
       var refreshInFlight = false;
       var bestShares = { global_best: 0, clients: [] };
+      var minedBlocks = { available: false, blocks: [] };
       var chartHistory = readSession("datum-hashrate-history", []);
       var events = readSession("datum-activity", []);
 
@@ -1253,6 +1429,41 @@
         return ths.toFixed(2) + " TH/s";
       }
 
+      function formatTimestamp(value) {
+        var date = new Date(value);
+        if (!value || Number.isNaN(date.getTime())) return "—";
+        return date.toLocaleString([], {
+          year: "numeric",
+          month: "short",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+        });
+      }
+
+      function shortHash(hash) {
+        var value = String(hash || "");
+        if (value.length !== 64) return value || "—";
+        return value.slice(0, 12) + "…" + value.slice(-8);
+      }
+
+      function blockExplorerUrl(hash, explorer) {
+        var value = String(hash || "");
+        var template = explorer && explorer.block_url_template;
+        if (!/^[0-9a-f]{64}$/i.test(value)) return "";
+        if (typeof template !== "string" || template.indexOf("https://mempool.guide/") !== 0) return "";
+        return template.replace("{hash}", value);
+      }
+
+      function targetPercent(share, target) {
+        if (!Number.isFinite(share) || share <= 0 || !Number.isFinite(target) || target <= 0) return "—";
+        var percent = (share / target) * 100;
+        if (percent >= 1000) return percent.toFixed(0) + "%";
+        if (percent >= 10) return percent.toFixed(1) + "%";
+        return percent.toFixed(2) + "%";
+      }
+
       function snapshot() {
         var accepted = parseShares(fieldText("shares-accepted"));
         var rejected = parseShares(fieldText("shares-rejected"));
@@ -1282,20 +1493,47 @@
 
       function shareTargetPercent(bestShare) {
         var target = parseNumber(fieldText("difficulty"));
-        if (!Number.isFinite(bestShare) || bestShare <= 0 || target <= 0) return "—";
-        var percent = (bestShare / target) * 100;
-        if (percent >= 1000) return percent.toFixed(0) + "%";
-        if (percent >= 10) return percent.toFixed(1) + "%";
-        return percent.toFixed(2) + "%";
+        return targetPercent(bestShare, target);
       }
 
       function renderBestShares() {
-        var globalBest = Number(bestShares.global_best) || 0;
+        var history = bestShares.history || {};
+        var historyBest = history.best || {};
+        var sinceBlock = history.best_since_last_block || {};
+        var lastBlock = history.last_block || null;
+        var globalBest = Number(historyBest.difficulty || bestShares.global_best) || 0;
+        var sinceBest = Number(sinceBlock.difficulty) || 0;
         var globalTarget = shareTargetPercent(globalBest);
         setText("global-best-share-output", globalBest > 0 ? compactNumber(globalBest) : "—");
         setText(
           "global-best-share-detail",
-          globalBest > 0 ? globalTarget + " of current target · since gateway start" : "since gateway start"
+          globalBest > 0 ? globalTarget + " of current target · known history" : "known history"
+        );
+        setText("since-block-share-output", sinceBest > 0 ? compactNumber(sinceBest) : "—");
+        setText(
+          "since-block-share-detail",
+          sinceBlock.complete
+            ? (sinceBest > 0 ? shareTargetPercent(sinceBest) + " of current target" : "no share recorded since block")
+            : "tracking incomplete until next mined block"
+        );
+
+        var lastBlockLink = byId("last-block-link");
+        var lastBlockUrl = lastBlock ? blockExplorerUrl(lastBlock.hash, history.explorer) : "";
+        lastBlockLink.textContent = lastBlock ? shortHash(lastBlock.hash) : "—";
+        if (lastBlockUrl) {
+          lastBlockLink.href = lastBlockUrl;
+          lastBlockLink.target = "_blank";
+          lastBlockLink.rel = "noopener noreferrer";
+        } else {
+          lastBlockLink.removeAttribute("href");
+          lastBlockLink.removeAttribute("target");
+          lastBlockLink.removeAttribute("rel");
+        }
+        setText(
+          "last-block-detail",
+          lastBlock
+            ? "height " + Number(lastBlock.height).toLocaleString() + " · " + formatTimestamp(lastBlock.block_time)
+            : "no recorded block"
         );
 
         var list = byId("best-share-clients");
@@ -1336,6 +1574,73 @@
           acceptedCell.className = "best-share-cell";
           acceptedCell.textContent = compactNumber(accepted) + " shares · " + compactNumber(acceptedDiff) + " diff";
           row.append(identity, bestCell, targetCell, acceptedCell);
+          list.appendChild(row);
+        });
+      }
+
+      function renderMinedBlocks() {
+        var list = byId("mined-block-list");
+        var blocks = Array.isArray(minedBlocks.blocks) ? minedBlocks.blocks : [];
+        var identity = minedBlocks.identity || {};
+        var explorer = minedBlocks.explorer || {};
+        list.replaceChildren();
+        setText(
+          "blocks-chain-output",
+          minedBlocks.available
+            ? [identity.pow_algorithm, identity.network].filter(Boolean).join(" / ")
+            : "waiting for node"
+        );
+        setText("blocks-count-output", blocks.length.toLocaleString());
+
+        if (!blocks.length) {
+          var empty = document.createElement("div");
+          empty.className = "best-share-empty";
+          empty.textContent = minedBlocks.available
+            ? "No accepted blocks are recorded for this chain."
+            : "Mining history is waiting for a valid block template from the node.";
+          list.appendChild(empty);
+          return;
+        }
+
+        blocks.forEach(function (block) {
+          var row = document.createElement("div");
+          var height = document.createElement("div");
+          var time = document.createElement("div");
+          var hash = document.createElement("div");
+          var hashLink = document.createElement("a");
+          var hashDetail = document.createElement("span");
+          var quality = document.createElement("div");
+          var qualityDetail = document.createElement("span");
+          var reward = document.createElement("div");
+          var blockUrl = blockExplorerUrl(block.hash, explorer);
+          var shareDifficulty = Number(block.share_difficulty) || 0;
+          var networkDifficulty = Number(block.network_difficulty) || 0;
+          var rewardSats = Number(block.reward_sats) || 0;
+
+          row.className = "mined-block-row";
+          height.className = "mined-block-cell";
+          height.textContent = Number(block.height).toLocaleString();
+          time.className = "mined-block-cell";
+          time.textContent = formatTimestamp(block.block_time);
+          hash.className = "mined-block-cell";
+          hashLink.className = "mined-block-link";
+          hashLink.textContent = String(block.hash || "—");
+          if (blockUrl) {
+            hashLink.href = blockUrl;
+            hashLink.target = "_blank";
+            hashLink.rel = "noopener noreferrer";
+          }
+          hashDetail.className = "mined-block-detail";
+          hashDetail.textContent = [block.status, block.source_node_package_id].filter(Boolean).join(" · ");
+          hash.append(hashLink, hashDetail);
+          quality.className = "mined-block-cell";
+          quality.textContent = compactNumber(shareDifficulty);
+          qualityDetail.className = "mined-block-detail";
+          qualityDetail.textContent = targetPercent(shareDifficulty, networkDifficulty) + " of target";
+          quality.appendChild(qualityDetail);
+          reward.className = "mined-block-cell";
+          reward.textContent = rewardSats > 0 ? (rewardSats / 100000000).toFixed(8) + " BTC" : "—";
+          row.append(height, time, hash, quality, reward);
           list.appendChild(row);
         });
       }
@@ -1383,6 +1688,7 @@
         setHtml("target-output", target ? target.innerHTML : "—");
         setText("witness-output", fieldText("witness"));
         renderBestShares();
+        renderMinedBlocks();
 
         var chip = byId("gateway-chip");
         var statusLower = current.status.toLowerCase();
@@ -1579,17 +1885,27 @@
           refreshUrl.search = "dashboard-refresh=" + Date.now();
           var bestSharesUrl = new URL(refreshUrl.href);
           bestSharesUrl.pathname = "/api/best-shares";
+          var minedBlocksUrl = new URL(refreshUrl.href);
+          minedBlocksUrl.pathname = "/api/mined-blocks";
           var responses = await Promise.all([
             fetch(refreshUrl.href, { cache: "no-store", credentials: "same-origin" }),
-            fetch(bestSharesUrl.href, { cache: "no-store", credentials: "same-origin" })
+            fetch(bestSharesUrl.href, { cache: "no-store", credentials: "same-origin" }),
+            fetch(minedBlocksUrl.href, { cache: "no-store", credentials: "same-origin" })
           ]);
           var response = responses[0];
           var bestSharesResponse = responses[1];
+          var minedBlocksResponse = responses[2];
           if (!response.ok) throw new Error("HTTP " + response.status);
           if (!bestSharesResponse.ok) throw new Error("Best-share API HTTP " + bestSharesResponse.status);
-          var payloads = await Promise.all([response.text(), bestSharesResponse.json()]);
+          if (!minedBlocksResponse.ok) throw new Error("Mined-block API HTTP " + minedBlocksResponse.status);
+          var payloads = await Promise.all([
+            response.text(),
+            bestSharesResponse.json(),
+            minedBlocksResponse.json()
+          ]);
           var html = payloads[0];
           bestShares = payloads[1] || { global_best: 0, clients: [] };
+          minedBlocks = payloads[2] || { available: false, blocks: [] };
           var remoteDocument = new DOMParser().parseFromString(html, "text/html");
           var before = previousSnapshot || snapshot();
           syncFields(remoteDocument);
@@ -1616,11 +1932,19 @@
       }
 
       previousSnapshot = snapshot();
+      var blocksPage = window.location.pathname === "/mined-blocks";
+      byId("mine-view").hidden = blocksPage;
+      byId("blocks-view").hidden = !blocksPage;
+      byId("mine-nav").classList.toggle("active", !blocksPage);
+      byId("blocks-nav").classList.toggle("active", blocksPage);
+      byId(blocksPage ? "blocks-nav" : "mine-nav").setAttribute("aria-current", "page");
+      if (blocksPage) document.title = "Mined Blocks · DATUM Gateway";
       addSample(previousSnapshot.hashrate);
       if (!events.length) addEvent("Dashboard connected · live DATUM polling active", "ok");
       render();
 
       byId("refresh-button").addEventListener("click", refresh);
+      byId("blocks-refresh-button").addEventListener("click", refresh);
       window.addEventListener("resize", drawChart);
       document.addEventListener("visibilitychange", function () {
         if (!document.hidden) refresh();

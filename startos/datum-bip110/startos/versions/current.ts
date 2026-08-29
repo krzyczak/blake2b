@@ -1,10 +1,10 @@
 import { IMPOSSIBLE, VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '0.1.0:10',
+  version: '0.1.0:11',
   releaseNotes: {
     en_US:
-      "Add a Bitcoin node selector. DATUM can now switch between the official Start9 Bitcoin Knots package and the companion Bitcoin Knots BIP110 lab package without moving either node's blockchain data.",
+      'Persist chain-scoped best shares and mined blocks. Add last-block details, mempool.guide links, and a Mined Blocks dashboard page.',
   },
   migrations: {
     up: async () => {},

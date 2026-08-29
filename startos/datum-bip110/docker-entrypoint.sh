@@ -12,6 +12,7 @@ COINBASE_TAG_PRIMARY="${DATUM_COINBASE_TAG_PRIMARY:-Totoro}"
 COINBASE_TAG_SECONDARY="${DATUM_COINBASE_TAG_SECONDARY:-StartOS-BIP110}"
 POOL_ADDRESS="${DATUM_POOL_ADDRESS:-mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn}"
 DASHBOARD_ADMIN_PASSWORD="${DATUM_DASHBOARD_ADMIN_PASSWORD:?DATUM dashboard password is required}"
+HISTORY_SOURCE_NODE="${DATUM_NODE_PACKAGE_ID:-}"
 
 if [ -n "${DATUM_RPC_COOKIE_FILE:-}" ]; then
     RPC_AUTH_CONFIG="\"rpccookiefile\": \"${DATUM_RPC_COOKIE_FILE}\""
@@ -45,7 +46,9 @@ cat > "$DATA_DIR/config.json" <<EOF
     "coinbase_tag_primary": "${COINBASE_TAG_PRIMARY}",
     "coinbase_tag_secondary": "${COINBASE_TAG_SECONDARY}",
     "coinbase_unique_id": 4242,
-    "pow_algorithm": "auto"
+    "pow_algorithm": "auto",
+    "history_file": "${DATA_DIR}/mining-history.json",
+    "history_source_node": "${HISTORY_SOURCE_NODE}"
   },
   "api": {
     "admin_password": "${DASHBOARD_ADMIN_PASSWORD}",
