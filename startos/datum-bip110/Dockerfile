@@ -39,6 +39,7 @@ RUN cmake -S /src -B /build -DCMAKE_BUILD_TYPE=Release \
 FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+        jq \
         libcurl4 \
         libjansson4 \
         libmicrohttpd12 \

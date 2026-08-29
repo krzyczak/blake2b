@@ -3,16 +3,15 @@ import {
   defaultCoinbaseTagSecondary,
   miningSettingsFile,
 } from '../file-models/mining-settings.json'
+import {
+  coinbaseTagByteLength,
+  coinbaseTagContainsNullByte,
+  maxCoinbaseTagBytes,
+  maxCombinedCoinbaseTagBytes,
+} from '../coinbase-tags'
 import { i18n } from '../i18n'
 import { sdk } from '../sdk'
 import { packageId } from '../utils'
-
-const tagPattern = {
-  regex: '^[A-Za-z0-9][A-Za-z0-9 ._:/+@-]*$',
-  description: i18n(
-    'Start with a letter or number; use only letters, numbers, spaces, and . _ : / + @ -.',
-  ),
-}
 
 const miningIdentityInputSpec = sdk.InputSpec.of({
   coinbaseTagPrimary: sdk.Value.text({
@@ -24,7 +23,6 @@ const miningIdentityInputSpec = sdk.InputSpec.of({
     required: true,
     minLength: 1,
     maxLength: 60,
-    patterns: [tagPattern],
   }),
   coinbaseTagSecondary: sdk.Value.text({
     name: i18n('Secondary Coinbase Tag'),
@@ -35,7 +33,6 @@ const miningIdentityInputSpec = sdk.InputSpec.of({
     required: true,
     minLength: 1,
     maxLength: 60,
-    patterns: [tagPattern],
   }),
 })
 
@@ -64,10 +61,24 @@ export const miningIdentity = sdk.Action.withInput(
     }
   },
   async ({ effects, input }) => {
+    const primaryBytes = coinbaseTagByteLength(input.coinbaseTagPrimary)
+    const secondaryBytes = coinbaseTagByteLength(input.coinbaseTagSecondary)
+
     if (
-      input.coinbaseTagPrimary.length + input.coinbaseTagSecondary.length >
-      88
+      coinbaseTagContainsNullByte(input.coinbaseTagPrimary) ||
+      coinbaseTagContainsNullByte(input.coinbaseTagSecondary)
     ) {
+      throw new Error(i18n('Coinbase tags cannot contain null bytes.'))
+    }
+
+    if (
+      primaryBytes > maxCoinbaseTagBytes ||
+      secondaryBytes > maxCoinbaseTagBytes
+    ) {
+      throw new Error(i18n('Each coinbase tag may be at most 60 bytes.'))
+    }
+
+    if (primaryBytes + secondaryBytes > maxCombinedCoinbaseTagBytes) {
       throw new Error(
         i18n('Primary and secondary coinbase tags may total at most 88 bytes.'),
       )

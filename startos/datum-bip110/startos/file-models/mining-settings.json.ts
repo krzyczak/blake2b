@@ -1,15 +1,12 @@
 import { FileHelper, z } from '@start9labs/start-sdk'
+import { isValidCoinbaseTag } from '../coinbase-tags'
 import { sdk } from '../sdk'
 
 export const defaultCoinbaseTagPrimary = 'Totoro'
 export const defaultCoinbaseTagSecondary = 'StartOS-BIP110'
 export const defaultPayoutAddress = 'mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn'
 
-const coinbaseTag = z
-  .string()
-  .min(1)
-  .max(60)
-  .regex(/^[A-Za-z0-9][A-Za-z0-9 ._:/+@-]*$/)
+const coinbaseTag = z.string().refine(isValidCoinbaseTag)
 
 const payoutAddress = z
   .string()
