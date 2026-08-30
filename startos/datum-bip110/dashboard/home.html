@@ -380,6 +380,12 @@
       font: 700 14px/1.2 var(--mono);
     }
 
+    .panel-meta {
+      color: var(--muted);
+      font: 600 10px/1.4 var(--mono);
+      white-space: nowrap;
+    }
+
     .panel-action {
       border: 0;
       padding: 7px 9px;
@@ -1180,6 +1186,7 @@
             <span class="panel-kicker">Template</span>
             <h2 class="panel-title" id="job-title">Current job</h2>
           </div>
+          <span class="panel-meta" id="job-height-output">height: —</span>
         </header>
         <dl class="detail-list">
           <div class="detail-row">
@@ -1664,6 +1671,7 @@
           "height-output",
           Number.isFinite(current.height) ? current.height.toLocaleString() : "—"
         );
+        setText("job-height-output", "height: " + (fieldText("height") || "—"));
         setText("difficulty-output", compactNumber(parseNumber(fieldText("difficulty"))));
         setText("job-info-output", fieldText("job-info") || "waiting for template");
         setText("uptime-output", fieldText("uptime"));
