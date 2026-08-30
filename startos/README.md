@@ -1,16 +1,19 @@
 # StartOS packages
 
-This directory contains three StartOS SDK 2.0 packages:
+This directory contains four StartOS SDK 2.0 packages:
 
 - `bitcoin-bip110`: Bitcoin Blake2b Lab, using Bitcoin Knots RC4 with selectable dummy, testnet4,
   signet, and regtest modes.
 - `datum-bip110`: DATUM Blake2b Lab, using Maveth's matching BLAKE2b gateway.
+- `bitcoin-knots-mainnet`: Bitcoin Knots RC4 for the BIP-110/RDTS mainnet
+  chain, packaged as an in-place upgrade of Start9's `bitcoind` service.
 - `mempool-guide`: the x86_64 mempool.guide/Retropex explorer, packaged under
   a separate service id so it can coexist with Start9's official Mempool.
 
-The Bitcoin and DATUM packages are a pair and support x86_64 and aarch64. The
-Mempool Guide package is independent and currently targets x86_64 only. All
-three packages pin immutable source commits and verify source tarball hashes.
+The Bitcoin lab and DATUM packages are a pair and support x86_64 and aarch64.
+The mainnet package supports x86_64, aarch64, and riscv64. Mempool Guide is
+independent and currently targets x86_64 only. All packages verify their
+upstream inputs.
 
 They use Start SDK 2.0.9 and target StartOS 0.4.0-beta.10. A server still on
 the 0.3.5 generation must be upgraded before it can sideload these packages.
@@ -31,6 +34,7 @@ x86_64.
 
 - Bitcoin Blake2b Lab for x86_64 and aarch64
 - DATUM Blake2b Lab for x86_64 and aarch64
+- Bitcoin Knots BLAKE2b mainnet for x86_64 and aarch64
 - Mempool Guide for x86_64
 
 Push this repository to GitHub, open **Actions**, select **Build StartOS
@@ -89,6 +93,14 @@ and BIP22 templates into Sia-style BLAKE2b Stratum, so use the miner's `--sia`
 mode. `--datum` remains a compatibility mode for Maveth's opt-in
 precomputed-mid lab dialect; it is not used by the StartOS gateway package.
 
-These are deliberately not mainnet packages. The upstream revisions are
-pinned by immutable commit and verified tarball hash; update both values
-together when testing a newer protocol revision.
+The Bitcoin lab and DATUM packages are deliberately not mainnet packages.
+Their upstream revisions are pinned by immutable commit and verified tarball
+hash; update both values together when testing a newer protocol revision.
+
+## Mainnet package
+
+`bitcoin-knots-mainnet` is separate from the lab pair. It keeps package ID
+`bitcoind`, so sideloading it upgrades the existing Start9 Bitcoin Knots node
+and reuses its `main` and `i2pd` volumes. It pins signed Knots RC4 binaries,
+activates BLAKE2b header v2 at block 961,640, and enforces
+`blake2b_headline=8-30 NYPost Deride And Conquer`.

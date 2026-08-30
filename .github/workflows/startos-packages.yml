@@ -12,6 +12,7 @@ on:
           - all
           - bitcoin-bip110
           - datum-bip110
+          - bitcoin-knots-mainnet
           - mempool-guide
       architecture:
         description: Architecture to build
@@ -48,6 +49,8 @@ jobs:
             { package: 'bitcoin-bip110', target: 'arm', runner: 'ubuntu-24.04-arm' },
             { package: 'datum-bip110', target: 'x86', runner: 'ubuntu-latest' },
             { package: 'datum-bip110', target: 'arm', runner: 'ubuntu-24.04-arm' },
+            { package: 'bitcoin-knots-mainnet', target: 'x86', runner: 'ubuntu-latest' },
+            { package: 'bitcoin-knots-mainnet', target: 'arm', runner: 'ubuntu-24.04-arm' },
             { package: 'mempool-guide', target: 'x86', runner: 'ubuntu-latest' },
           ]
 
@@ -87,7 +90,7 @@ jobs:
 
     steps:
       - name: Free disk space for image builds
-        if: matrix.package == 'bitcoin-bip110' || matrix.package == 'mempool-guide'
+        if: matrix.package == 'bitcoin-bip110' || matrix.package == 'bitcoin-knots-mainnet' || matrix.package == 'mempool-guide'
         uses: Start9Labs/start-technologies/.github/actions/free-disk-space@master
 
       - name: Set up the StartOS build environment
