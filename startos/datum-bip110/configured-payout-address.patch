@@ -1,0 +1,11 @@
+diff --git a/src/datum_api.c b/src/datum_api.c
+index cb16167..09a58d2 100644
+--- a/src/datum_api.c
++++ b/src/datum_api.c
+@@ -791 +791,5 @@ int datum_api_coinbaser(struct MHD_Connection *connection) {
+-			output_script_2_addr(sjob->pool_addr_script, sjob->pool_addr_script_len, tempaddr);
++			if (sjob->is_datum_job) {
++				output_script_2_addr(sjob->pool_addr_script, sjob->pool_addr_script_len, tempaddr);
++			} else {
++				snprintf(tempaddr, sizeof(tempaddr), "%s", datum_config.mining_pool_address);
++			}

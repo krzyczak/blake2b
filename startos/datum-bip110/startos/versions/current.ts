@@ -1,10 +1,10 @@
 import { IMPOSSIBLE, VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '0.1.0:11',
+  version: '0.1.0:12',
   releaseNotes: {
     en_US:
-      'Persist chain-scoped best shares and mined blocks. Add last-block details, mempool.guide links, and a Mined Blocks dashboard page.',
+      'Show the exact configured solo payout address on the Coinbaser page and allow arbitrary UTF-8 coinbase tags within DATUM byte limits.',
   },
   migrations: {
     up: async () => {},
