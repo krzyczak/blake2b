@@ -50,7 +50,10 @@ const mempoolSection = z.object({
   STDOUT_LOG_MIN_PRIORITY: z
     .enum(['debug', 'info', 'warn', 'err'])
     .catch('info'),
-  AUTOMATIC_POOLS_UPDATE: z.boolean().catch(false),
+  // The source is the immutable snapshot served by our loopback sidecar, not
+  // the network. Apply a changed snapshot after a package upgrade so newly
+  // identified miners are reindexed without touching the block database.
+  AUTOMATIC_POOLS_UPDATE: z.literal(true).catch(true),
   // enforced: the bundled snapshot is the only source, so a value left over from
   // an older install is repaired by the next `merge` rather than migrated
   POOLS_JSON_URL: z.literal(poolsJsonUrl).catch(poolsJsonUrl),

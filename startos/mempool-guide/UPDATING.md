@@ -49,11 +49,12 @@ Update `GEOIP_COMMIT`, `GEOIP_CITY_SHA256`, and `GEOIP_ASN_SHA256` together.
 ## Refresh the bundled mining-pool snapshot
 
 `assets/pools-v2.json` is served on loopback so a first start does not depend
-on GitHub. Refresh it when updating the fork:
+on GitHub. It must come from Retropex's registry, which supplies the identities
+shown by mempool.guide. Refresh it when updating the fork:
 
 ```sh
 curl -fsSL -o assets/pools-v2.json \
-  https://raw.githubusercontent.com/mempool/mining-pools/master/pools-v2.json
+  https://raw.githubusercontent.com/Retropex/mining-pools/master/pools-v2.json
 ```
 
 The pools server computes the git-blob hash at runtime. Confirm it matches the

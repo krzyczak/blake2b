@@ -14,6 +14,7 @@
 - Everything needed for a first start bundled in — Mempool never has to reach the internet to come up, and does not contact GitHub at all.
 - BIP110 signaling, deployment, and violation visualizations from the mempool.guide fork.
 - Full BLAKE2b header v2 indexing, including the additional header fields shown on block pages.
+- Miner identities from Mempool Guide's registry. Package upgrades import newer bundled definitions and reindex blocks still shown as Unknown.
 
 This is a separate `mempool-guide` service. It can coexist with the official `mempool` service and keeps its own database, cache, and settings. It reads the same Bitcoin and Electrum dependencies.
 
