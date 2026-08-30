@@ -2,7 +2,7 @@
 
 This directory contains three StartOS SDK 2.0 packages:
 
-- `bitcoin-bip110`: Bitcoin Blake2b Lab, using Bitcoin Knots RC3 with selectable dummy, testnet4,
+- `bitcoin-bip110`: Bitcoin Blake2b Lab, using Bitcoin Knots RC4 with selectable dummy, testnet4,
   signet, and regtest modes.
 - `datum-bip110`: DATUM Blake2b Lab, using Maveth's matching BLAKE2b gateway.
 - `mempool-guide`: the x86_64 mempool.guide/Retropex explorer, packaged under
@@ -68,10 +68,10 @@ The packages regenerate these settings at every start:
 
 - Network: selected in the Bitcoin package action.
 - Dummy activation: BLAKE2b at height 20 with headline `BIP110-LAB`.
-- Public testnet4: RC3's built-in activation at height 150027 with real peer
+- Public testnet4: RC4's built-in activation at height 150308 with real peer
   synchronization. The package defaults its headline to `Totoro`; the node's
   **Set BLAKE2b Headline** action can override this separately for each network
-  when the RC3 test announcement specifies a different exact value.
+  when the RC4 test announcement specifies a different exact value.
 - Bitcoin RPC: port 18443, bridge-only on StartOS.
 - Gateway Stratum: raw TCP port 23334 (StartOS may assign another external
   port if it is already occupied).

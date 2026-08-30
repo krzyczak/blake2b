@@ -7,9 +7,9 @@ export const manifest = setupManifest({
   license: 'MIT',
   packageRepo: 'https://github.com/krzyczak/blake2b',
   upstreamRepo:
-    'https://github.com/bitcoinknots/bitcoin/tree/v29.4.1.knots20260508rc3',
+    'https://github.com/bitcoinknots/bitcoin/tree/v29.4.1.knots20260508rc4',
   marketingUrl:
-    'https://github.com/bitcoinknots/bitcoin/tree/v29.4.1.knots20260508rc3',
+    'https://github.com/bitcoinknots/bitcoin/tree/v29.4.1.knots20260508rc4',
   donationUrl: null,
   description: { short, long },
   volumes: ['main'],
@@ -18,9 +18,9 @@ export const manifest = setupManifest({
       source: {
         dockerBuild: {
           buildArgs: {
-            BITCOIN_COMMIT: 'afbe91c299e16519f03902939fdbda8af9bd527d',
+            BITCOIN_COMMIT: 'dc82be77dd741dfa63e1f816367b15364d55b051',
             BITCOIN_TARBALL_SHA256:
-              '2758d73bb5a0ec9d8dcf8b808dd738c83699f6da1f5b20825c900ef3646c076d',
+              'ebb740036801b1671c8d771118982ba860ce13f04be9bed633f07342a3121189',
           },
         },
       },
