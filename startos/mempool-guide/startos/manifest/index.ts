@@ -28,9 +28,9 @@ export const manifest = setupManifest({
           dockerfile: 'Dockerfile.frontend',
           workdir: '.',
           buildArgs: {
-            MEMPOOL_GUIDE_COMMIT: 'a4c204dc513f05429638ffad9a84d627dde74c07',
+            MEMPOOL_GUIDE_COMMIT: 'c4aa9002e8122b9121499f3bfcf23a3dfe1f5a81',
             MEMPOOL_GUIDE_TARBALL_SHA256:
-              'bbfa0df6e17d4a071fe8610b620c0bf254bd54b06f96c13725d44a5408fdbac0',
+              '112d8282605339f1e47a835b5dd0404430db0ce5269a88b63173ffffffb1e475',
           },
         },
       },
@@ -42,9 +42,9 @@ export const manifest = setupManifest({
           dockerfile: 'Dockerfile.backend',
           workdir: '.',
           buildArgs: {
-            MEMPOOL_GUIDE_COMMIT: 'a4c204dc513f05429638ffad9a84d627dde74c07',
+            MEMPOOL_GUIDE_COMMIT: 'c4aa9002e8122b9121499f3bfcf23a3dfe1f5a81',
             MEMPOOL_GUIDE_TARBALL_SHA256:
-              'bbfa0df6e17d4a071fe8610b620c0bf254bd54b06f96c13725d44a5408fdbac0',
+              '112d8282605339f1e47a835b5dd0404430db0ce5269a88b63173ffffffb1e475',
             GEOIP_COMMIT: '807ed1550b408eb13b680a6805df80a7a61f56ac',
             GEOIP_CITY_SHA256:
               '04d5e8e0e26f3ff50355a6dc02cdcc58b5f4bb09dbfbb3d582eb8fa941365176',

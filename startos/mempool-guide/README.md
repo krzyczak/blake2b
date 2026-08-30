@@ -12,12 +12,14 @@
 [Mempool Guide](https://mempool.guide) is the BIP110-aware fork of Mempool maintained in [`Retropex/mempool`](https://github.com/Retropex/mempool). On StartOS it runs entirely against your own Bitcoin node and your own Electrum indexer, with every external data source that upstream reaches for either disabled or optional.
 
 - **Fork repo:** <https://github.com/Retropex/mempool>
-- **Pinned source:** `a4c204dc513f05429638ffad9a84d627dde74c07`
+- **Pinned source:** `c4aa9002e8122b9121499f3bfcf23a3dfe1f5a81`
 - **Package repo:** <https://github.com/krzyczak/blake2b/tree/master/startos/mempool-guide>
 
 This package deliberately uses the unique StartOS id `mempool-guide`. It can be installed beside the official `mempool` package, and its config, cache, and MariaDB volumes are completely separate. Both packages can read the same Bitcoin and Electrum services.
 
 Installing this fork does **not** copy the public mempool from mempool.guide. The transactions and projected blocks shown are derived from the local Bitcoin node's mempool; the fork changes the explorer and adds its BIP110 views.
+
+The pinned fork stores the 328-character BLAKE2b header v2 representation in a widened database column. Upgrading from the initial package runs upstream schema migration 112 in place, preserving indexed blocks and allowing the backend to continue past the first header v2 block.
 
 ---
 

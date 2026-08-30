@@ -1,10 +1,10 @@
 import { IMPOSSIBLE, VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '3.4.0-dev.20260805:1',
+  version: '3.4.0-dev.20260830:1',
   releaseNotes: {
     en_US:
-      'Initial Mempool Guide package for StartOS. Built from Retropex/mempool commit a4c204dc513f05429638ffad9a84d627dde74c07 with BIP110 signaling and violation visualizations. Installs independently from the official Mempool package.',
+      'Updates Retropex/mempool to commit c4aa9002e8122b9121499f3bfcf23a3dfe1f5a81. Widens stored block headers for BLAKE2b header v2 blocks and displays their additional fields.',
   },
   migrations: {
     up: async () => {},
