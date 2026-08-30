@@ -87,23 +87,23 @@ const clearFlavorKeys = {
 }
 
 export const current = VersionInfo.of({
-  version: '#knots:29.4:10',
+  version: '#knots:29.4:11',
   releaseNotes: {
     en_US: `- Update Bitcoin Knots to v29.4.1.knots20260508rc4.
 - Activate BLAKE2b header-v2 proof of work from mainnet block 961,640.
-- Enforce the consensus headline "8-30 NYPost Deride And Conquer".`,
+- Make the consensus-critical BLAKE2b headline configurable; the default remains "8-30 NYPost Deride And Conquer".`,
     es_ES: `- Actualiza Bitcoin Knots a v29.4.1.knots20260508rc4.
 - Activa la prueba de trabajo BLAKE2b con cabecera v2 desde el bloque 961.640 de mainnet.
-- Impone el titular de consenso "8-30 NYPost Deride And Conquer".`,
+- Permite configurar el titular BLAKE2b crítico para el consenso; el valor predeterminado sigue siendo "8-30 NYPost Deride And Conquer".`,
     de_DE: `- Aktualisiert Bitcoin Knots auf v29.4.1.knots20260508rc4.
 - Aktiviert BLAKE2b-Proof-of-Work mit Header v2 ab Mainnet-Block 961.640.
-- Erzwingt die Konsens-Schlagzeile „8-30 NYPost Deride And Conquer“.`,
+- Macht die konsenskritische BLAKE2b-Schlagzeile konfigurierbar; der Standard bleibt „8-30 NYPost Deride And Conquer“.`,
     pl_PL: `- Aktualizuje Bitcoin Knots do v29.4.1.knots20260508rc4.
 - Aktywuje proof of work BLAKE2b z nagłówkiem v2 od bloku mainnet 961 640.
-- Wymusza nagłówek konsensusu „8-30 NYPost Deride And Conquer”.`,
+- Umożliwia konfigurację krytycznego dla konsensusu nagłówka BLAKE2b; wartością domyślną pozostaje „8-30 NYPost Deride And Conquer“.`,
     fr_FR: `- Met à jour Bitcoin Knots vers v29.4.1.knots20260508rc4.
 - Active la preuve de travail BLAKE2b à en-tête v2 à partir du bloc mainnet 961 640.
-- Impose le titre de consensus « 8-30 NYPost Deride And Conquer ».`,
+- Rend configurable le titre BLAKE2b critique pour le consensus ; la valeur par défaut reste « 8-30 NYPost Deride And Conquer ».`,
   },
   migrations: {
     up: async ({ effects }) => {},

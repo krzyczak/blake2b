@@ -449,6 +449,12 @@ const dict = {
   '${count} invalid chain branch(es) inherited from the previous bitcoind flavor could not be reconsidered: this pruned node no longer stores the blocks needed to reorganize onto them. If the node appears stuck on the wrong chain, run Reindex Blockchain (on a pruned node this re-downloads the chain).': 3229,
   'Chain Recovery Failed': 3230,
   'Clearing invalid-block verdicts inherited from the previous bitcoind flavor failed; it will be retried at the next restart. Error: ${error}': 3231,
+
+  // actions/config/other.ts
+  'BLAKE2b Headline': 3300,
+  'Consensus-critical headline required in the BLAKE2b activation block. It must exactly match the chain you intend to follow.': 3301,
+  'Changing this value can make the node reject the established activation block and follow an incompatible chain. This is not the miner identity shown in every coinbase.': 3302,
+  'Use one line of printable ASCII without leading or trailing spaces.': 3303,
 } as const
 
 /**

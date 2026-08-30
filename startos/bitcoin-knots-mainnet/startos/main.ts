@@ -135,7 +135,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
 
   const bitcoinArgs: string[] = [
     `-onion=${torSocks}`,
-    `-blake2b_headline=${blake2bHeadline}`,
+    `-blake2b_headline=${bitcoinConf.raw?.blake2b_headline ?? blake2bHeadline}`,
   ]
 
   if (reindexBlockchain) {

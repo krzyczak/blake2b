@@ -432,6 +432,10 @@ export default {
     2916: 'Construyendo la base de datos de la red',
     2917: 'No se encontraron pares. El enrutador no pudo contactar con ningún servidor de resiembra, lo que suele significar que este servidor no puede resolver DNS. Revise Sistema > Servidores DNS.',
     2918: 'El enrutador I2P informó del estado de error ${status}',
+    3300: 'Titular BLAKE2b',
+    3301: 'Titular crítico para el consenso requerido en el bloque de activación BLAKE2b. Debe coincidir exactamente con la cadena que pretende seguir.',
+    3302: 'Cambiar este valor puede hacer que el nodo rechace el bloque de activación establecido y siga una cadena incompatible. No es la identidad del minero mostrada en cada coinbase.',
+    3303: 'Use una sola línea de ASCII imprimible sin espacios iniciales ni finales.',
   } satisfies LangDict,
   de_DE: {
     // main.ts
@@ -864,6 +868,10 @@ export default {
     2916: 'Netzwerkdatenbank wird aufgebaut',
     2917: 'Keine Peers gefunden. Der Router konnte keinen Reseed-Server erreichen, was in der Regel bedeutet, dass dieser Server keine DNS-Namen auflösen kann. Prüfen Sie System > DNS-Server.',
     2918: 'Der I2P-Router meldete den Fehlerstatus ${status}',
+    3300: 'BLAKE2b-Schlagzeile',
+    3301: 'Konsenskritische Schlagzeile, die im BLAKE2b-Aktivierungsblock erforderlich ist. Sie muss exakt der Kette entsprechen, der Sie folgen möchten.',
+    3302: 'Eine Änderung kann dazu führen, dass der Knoten den bestehenden Aktivierungsblock ablehnt und einer inkompatiblen Kette folgt. Dies ist nicht die Miner-Identität, die in jeder Coinbase angezeigt wird.',
+    3303: 'Verwenden Sie eine Zeile druckbares ASCII ohne führende oder nachgestellte Leerzeichen.',
   } satisfies LangDict,
   pl_PL: {
     // main.ts
@@ -1296,6 +1304,10 @@ export default {
     2916: 'Budowanie bazy danych sieci',
     2917: 'Nie znaleziono węzłów. Router nie mógł połączyć się z żadnym serwerem reseed, co zwykle oznacza, że ten serwer nie rozwiązuje nazw DNS. Sprawdź System > Serwery DNS.',
     2918: 'Router I2P zgłosił status błędu ${status}',
+    3300: 'Nagłówek BLAKE2b',
+    3301: 'Krytyczny dla konsensusu nagłówek wymagany w bloku aktywacji BLAKE2b. Musi dokładnie odpowiadać łańcuchowi, który chcesz śledzić.',
+    3302: 'Zmiana tej wartości może spowodować odrzucenie istniejącego bloku aktywacji i przejście na niezgodny łańcuch. Nie jest to tożsamość minera widoczna w każdym coinbase.',
+    3303: 'Użyj jednej linii drukowalnych znaków ASCII bez spacji na początku ani na końcu.',
   } satisfies LangDict,
   fr_FR: {
     // main.ts
@@ -1728,5 +1740,9 @@ export default {
     2916: 'Construction de la base de données du réseau',
     2917: "Aucun pair trouvé. Le routeur n'a pu joindre aucun serveur de réamorçage, ce qui signifie généralement que ce serveur ne peut pas résoudre les noms DNS. Vérifiez Système > Serveurs DNS.",
     2918: "Le routeur I2P a signalé le statut d'erreur ${status}",
+    3300: 'Titre BLAKE2b',
+    3301: "Titre critique pour le consensus requis dans le bloc d'activation BLAKE2b. Il doit correspondre exactement à la chaîne que vous souhaitez suivre.",
+    3302: "Modifier cette valeur peut amener le nœud à rejeter le bloc d'activation établi et à suivre une chaîne incompatible. Il ne s'agit pas de l'identité du mineur affichée dans chaque coinbase.",
+    3303: 'Utilisez une seule ligne ASCII imprimable sans espace au début ni à la fin.',
   } satisfies LangDict,
 }

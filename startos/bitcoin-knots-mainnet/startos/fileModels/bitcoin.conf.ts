@@ -60,14 +60,19 @@ type ValidNets = z.infer<typeof onlyNetOption>
 // Any other value is pinned back to this one.
 export const defaultMaxtipage = 14 * 24 * 60 * 60
 export const blake2bHeadline = '8-30 NYPost Deride And Conquer' as const
+export const blake2bHeadlineMaxLength = 90
+export const blake2bHeadlinePattern = '^[!-~](?:[ -~]*[!-~])?$'
+
+const blake2bHeadlineSchema = z
+  .string()
+  .min(1)
+  .max(blake2bHeadlineMaxLength)
+  .regex(new RegExp(blake2bHeadlinePattern))
 
 export const shape = z
   .object({
     maxtipage: z.literal(defaultMaxtipage).optional().catch(defaultMaxtipage),
-    blake2b_headline: z
-      .literal(blake2bHeadline)
-      .optional()
-      .catch(blake2bHeadline),
+    blake2b_headline: blake2bHeadlineSchema.optional().catch(blake2bHeadline),
 
     // RPC enforced
     rpcbind: z.enum([rpcbind, rpcbindPruned]).catch(rpcbind),
@@ -536,6 +541,27 @@ export const fullConfigSpec = sdk.InputSpec.of({
   }),
 
   // === OTHER ===
+  blake2bHeadline: Value.text({
+    name: i18n('BLAKE2b Headline'),
+    description: i18n(
+      'Consensus-critical headline required in the BLAKE2b activation block. It must exactly match the chain you intend to follow.',
+    ),
+    warning: i18n(
+      'Changing this value can make the node reject the established activation block and follow an incompatible chain. This is not the miner identity shown in every coinbase.',
+    ),
+    default: blake2bHeadline,
+    required: true,
+    minLength: 1,
+    maxLength: blake2bHeadlineMaxLength,
+    patterns: [
+      {
+        regex: blake2bHeadlinePattern,
+        description: i18n(
+          'Use one line of printable ASCII without leading or trailing spaces.',
+        ),
+      },
+    ],
+  }),
   softwareexpiry: Value.number({
     name: i18n('Software Expiry'),
     description: i18n(
@@ -965,6 +991,7 @@ function fileToForm(
     zmqpubrawtx,
     zmqpubsequence,
     // Other
+    blake2b_headline,
     softwareexpiry,
     txindex,
     coinstatsindex,
@@ -1033,6 +1060,7 @@ function fileToForm(
     minrelaymaturity,
 
     // Other - with transforms
+    blake2bHeadline: blake2b_headline ?? blake2bHeadline,
     softwareexpiry,
     zmqEnabled: !!(
       zmqpubhashblock &&
@@ -1137,6 +1165,7 @@ function formToFile(
     minrelaycoinblocks,
     minrelaymaturity,
     // Other
+    blake2bHeadline,
     softwareexpiry,
     prune,
     wallet,
@@ -1239,6 +1268,7 @@ function formToFile(
     discardfee: wallet?.discardfee ?? undefined,
 
     // Other
+    blake2b_headline: blake2bHeadline,
     softwareexpiry,
     txindex: prune ? false : (txindex ?? undefined),
     coinstatsindex: coinstatsindex ?? undefined,

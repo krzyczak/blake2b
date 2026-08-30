@@ -9,7 +9,7 @@
 > upstream documentation is accurate and fully applicable — see the
 > Documentation section of `instructions.md` for links.
 
-[Bitcoin Knots](https://github.com/bitcoinknots/bitcoin) is a derivative of Bitcoin Core with a larger set of policy controls and a built-in wallet surface. **This private flavor follows the RDTS chain and switches it to BLAKE2b header-v2 proof of work at block 961,640.** It runs Knots `v29.4.1.knots20260508rc4`, pins the required consensus headline, and retains the official `bitcoind` package ID so an existing Start9 node upgrades in place.
+[Bitcoin Knots](https://github.com/bitcoinknots/bitcoin) is a derivative of Bitcoin Core with a larger set of policy controls and a built-in wallet surface. **This private flavor follows the RDTS chain and switches it to BLAKE2b header-v2 proof of work at block 961,640.** It runs Knots `v29.4.1.knots20260508rc4`, defaults to the required mainnet consensus headline, and retains the official `bitcoind` package ID so an existing Start9 node upgrades in place.
 
 - **Upstream repo:** <https://github.com/bitcoinknots/bitcoin>
 - **Wrapper base:** <https://github.com/Start9Labs/bitcoin-knots-startos/tree/29.x>
@@ -91,7 +91,7 @@ Three keys are specific to this flavor:
 | ---------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `consensusrules` | `rdts`, when present | Records your consent and silences the binary's hourly warning. It does **not** gate enforcement — this build enforces RDTS either way — so deleting it is a supported choice and the model will not resurrect it |
 | `maxtipage`      | 14 days              | Retains the loose tip-age limit used during the pre-BLAKE2b RDTS stall. Any other value is pinned back to this one                                                                                     |
-| `blake2b_headline` | `8-30 NYPost Deride And Conquer` | Consensus-critical headline required by RC4. The package seeds it in the file and independently enforces it in the daemon command                                                         |
+| `blake2b_headline` | `8-30 NYPost Deride And Conquer` by default | Consensus-critical activation-block headline. **Other Settings** changes it, and the daemon command uses the stored value                                                         |
 
 **Seeded at install and then yours.** Install overrides these and nothing else:
 
@@ -104,6 +104,7 @@ Three keys are specific to this flavor:
 | `prune`                                                                              | 0 (archival)                 | The 550 MiB floor, on disks below roughly 900 GB | Fit the chain to the disk              |
 | `i2psam`                                                                             | off                          | The embedded I2P router's SAM address            | I2P peering without a separate service |
 | `assumevalid`                                                                        | A hash built into the binary | A hash pinned by this package                    | —                                      |
+| `blake2b_headline`                                                                   | none; startup fails          | `8-30 NYPost Deride And Conquer`                 | Select the intended activation block   |
 
 These are starting points, not assertions: nothing re-imposes them, so changing one in the config forms sticks. The two sync-boost values are the exception, and they are removed rather than re-asserted — see below.
 
@@ -240,6 +241,10 @@ Knots' built-in wallet, surfaced as actions. All nine are grouped under **Wallet
 
 **On the RDTS chain, spending needs extra care.** The two chains share no replay protection, so a transaction broadcast here can be replayed on the other chain and spend the same coins there.
 
+### BLAKE2b Headline (Other Settings)
+
+Changes the `blake2b_headline` passed to Bitcoin Knots and stored in `bitcoin.conf`. The value is 1–90 printable ASCII characters with no leading or trailing spaces. It is consensus-critical at the BLAKE2b activation block: a value different from the established chain's exact headline can make a reindex or fresh sync reject that block and follow an incompatible chain. It is not the miner identity that pools may place in every coinbase.
+
 ### Prioritize Transaction
 
 Raises or lowers a transaction's effective fee in this node's own mempool, using a fee delta.
@@ -321,8 +326,9 @@ Both volumes are copied wholesale — `sdk.Backups.ofVolumes('main', 'i2pd')`. T
 10. **This flavor follows the RDTS chain**, changes proof of work to BLAKE2b header v2 at 961,640, and has no replay protection against the Bitcoin Core chain.
 11. **`consensusrules` does not gate enforcement.** This build enforces RDTS whether or not the option is present; the option only records consent and silences an hourly warning.
 12. **`maxtipage` remains pinned to 14 days** for compatibility with the chain's pre-BLAKE2b stalled period.
-13. **Every Wallet action disappears when `disablewallet` is on**, and all of them require the service to be running.
-14. **The repo maintains one branch per flavor**, each published as the same `bitcoind` package. Release notes and pinned upstream versions differ between them.
+13. **The BLAKE2b headline is configurable but consensus-critical.** The default follows this package's RDTS mainnet chain; changing it selects a different expected activation block and can break fresh validation of the existing chain.
+14. **Every Wallet action disappears when `disablewallet` is on**, and all of them require the service to be running.
+15. **The repo maintains one branch per flavor**, each published as the same `bitcoind` package. Release notes and pinned upstream versions differ between them.
 
 ---
 

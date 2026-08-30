@@ -40,13 +40,10 @@ export const seedFiles = sdk.setupOnInit(async (effects, kind) => {
       },
     })
   } else {
-    // Not install-only: this upgrades existing datadirs to the consensus
-    // headline required by RC4 and preserves the loose tip-age limit.
+    // Preserve the loose tip-age limit on update/restore without replacing a
+    // headline the user selected through the package action.
     await bitcoinConfFile.merge(effects, {
-      raw: {
-        maxtipage: defaultMaxtipage,
-        blake2b_headline: blake2bHeadline,
-      },
+      raw: { maxtipage: defaultMaxtipage },
     })
   }
 })
