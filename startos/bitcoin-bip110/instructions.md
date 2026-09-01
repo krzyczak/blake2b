@@ -1,7 +1,7 @@
 # Bitcoin Blake2b Lab
 
 This experimental package runs Bitcoin Knots
-`v29.4.1.knots20260508rc4`. Open **Actions → Select Network** to choose the
+`v29.4.1.knots20260508rc5`. Open **Actions → Select Network** to choose the
 chain:
 
 - **Isolated dummy regtest** is the default and preserves the original lab.
@@ -15,21 +15,19 @@ chain:
 - **Regtest** creates a separate, unbootstrapped local regtest. Regtest has no
   canonical public network to synchronize with.
 
-After selecting a network, **Actions → Set BLAKE2b Headline** shows its current
-value and lets you store a separate override for that network. The package
-defaults to `Totoro` on testnet4 and `BIP110-LAB` in dummy mode. Change it only
-when the Knots RC4 test announcement publishes a different exact value: the
-setting is consensus-critical at the BLAKE2b activation block.
+In dummy mode, **Actions → Set BLAKE2b Headline** changes the regtest-only
+activation headline. The default is `BIP110-LAB`. RC5 permits this override
+only with an explicit regtest activation height, so the action is hidden in
+testnet4, signet, and ordinary regtest.
 
 Each mode keeps separate chain data. Public networks use a pruned, fully
 validated IBD; there is no safe fake-IBD shortcut for producing blocks that
 public peers will accept.
 
-The package writes the selected network's headline into `bitcoin.conf`. At the
-activation block the node passes it through `getblocktemplate`, DATUM adds it
-to the coinbase, and the miner receives the finished BIP110 job. It is a node
-setting, not the explorer-visible mining identity and not a miner command-line
-option.
+For dummy mode, the package writes the headline into `bitcoin.conf`. A narrow
+RPC compatibility patch passes it through `getblocktemplate` at height 20,
+DATUM adds it to the coinbase, and the miner receives the finished BIP110 job.
+It is not the explorer-visible mining identity or a miner command-line option.
 
 To mine against this node, install and start DATUM Blake2b Lab and connect
 the Apple miner to its Stratum interface using `--sia`. The node itself does

@@ -407,7 +407,7 @@ export default {
     2914: 'Por defecto',
     3000: 'Confirmo',
     3002: 'Adhesión a la cadena RDTS',
-    3004: 'El Reduced Data Temporary Softfork («RDTS») de BIP-110 se separó de la cadena seguida por Bitcoin Core en el bloque 961.632. Este paquete sigue esa cadena independiente. Bitcoin Knots v29.4.1.knots20260508rc4 cambia su prueba de trabajo a BLAKE2b con cabecera v2 desde el bloque 961.640 y exige el titular de consenso «8-30 NYPost Deride And Conquer». Actualizar un nodo RDTS existente puede causar una reorganización profunda que descarte los bloques SHA256d posteriores al 961.639. Las dos cadenas no tienen protección contra repetición.',
+    3004: 'El Reduced Data Temporary Softfork («RDTS») de BIP-110 se separó de la cadena seguida por Bitcoin Core en el bloque 961.632. Este paquete sigue esa cadena independiente. Bitcoin Knots v29.4.1.knots20260508rc5 cambia su prueba de trabajo a BLAKE2b con cabecera v2 desde el bloque 961.640 y exige el titular de consenso «8-30 NYPost Deride And Conquer». Actualizar un nodo RDTS existente puede causar una reorganización profunda que descarte los bloques SHA256d posteriores al 961.639. Las dos cadenas no tienen protección contra repetición.',
     3005: 'Por favor, confirme',
     3007: 'Confirma que esta versión sigue la cadena RDTS independiente y usa prueba de trabajo BLAKE2b con cabecera v2 desde el bloque 961.640.',
 
@@ -432,10 +432,6 @@ export default {
     2916: 'Construyendo la base de datos de la red',
     2917: 'No se encontraron pares. El enrutador no pudo contactar con ningún servidor de resiembra, lo que suele significar que este servidor no puede resolver DNS. Revise Sistema > Servidores DNS.',
     2918: 'El enrutador I2P informó del estado de error ${status}',
-    3300: 'Titular BLAKE2b',
-    3301: 'Titular crítico para el consenso requerido en el bloque de activación BLAKE2b. Debe coincidir exactamente con la cadena que pretende seguir.',
-    3302: 'Cambiar este valor puede hacer que el nodo rechace el bloque de activación establecido y siga una cadena incompatible. No es la identidad del minero mostrada en cada coinbase.',
-    3303: 'Use una sola línea de ASCII imprimible sin espacios iniciales ni finales.',
   } satisfies LangDict,
   de_DE: {
     // main.ts
@@ -843,7 +839,7 @@ export default {
     2914: 'Standard',
     3000: 'Ich bestätige',
     3002: 'Beitritt zur RDTS-Kette',
-    3004: 'Der BIP-110 Reduced Data Temporary Softfork („RDTS“) trennte sich bei Block 961.632 von der von Bitcoin Core gefolgten Kette. Dieses Paket folgt dieser separaten Kette. Bitcoin Knots v29.4.1.knots20260508rc4 wechselt ab Block 961.640 auf BLAKE2b-Proof-of-Work mit Header v2 und verlangt die Konsens-Schlagzeile „8-30 NYPost Deride And Conquer“. Das Upgrade eines bestehenden RDTS-Knotens kann eine tiefe Reorganisation weg von SHA256d-Blöcken nach 961.639 auslösen. Die Ketten haben keinen Replay-Schutz.',
+    3004: 'Der BIP-110 Reduced Data Temporary Softfork („RDTS“) trennte sich bei Block 961.632 von der von Bitcoin Core gefolgten Kette. Dieses Paket folgt dieser separaten Kette. Bitcoin Knots v29.4.1.knots20260508rc5 wechselt ab Block 961.640 auf BLAKE2b-Proof-of-Work mit Header v2 und verlangt die Konsens-Schlagzeile „8-30 NYPost Deride And Conquer“. Das Upgrade eines bestehenden RDTS-Knotens kann eine tiefe Reorganisation weg von SHA256d-Blöcken nach 961.639 auslösen. Die Ketten haben keinen Replay-Schutz.',
     3005: 'Bitte bestätigen',
     3007: 'Bestätige, dass diese Version der separaten RDTS-Kette folgt und ab Block 961.640 BLAKE2b-Proof-of-Work mit Header v2 verwendet.',
 
@@ -868,10 +864,6 @@ export default {
     2916: 'Netzwerkdatenbank wird aufgebaut',
     2917: 'Keine Peers gefunden. Der Router konnte keinen Reseed-Server erreichen, was in der Regel bedeutet, dass dieser Server keine DNS-Namen auflösen kann. Prüfen Sie System > DNS-Server.',
     2918: 'Der I2P-Router meldete den Fehlerstatus ${status}',
-    3300: 'BLAKE2b-Schlagzeile',
-    3301: 'Konsenskritische Schlagzeile, die im BLAKE2b-Aktivierungsblock erforderlich ist. Sie muss exakt der Kette entsprechen, der Sie folgen möchten.',
-    3302: 'Eine Änderung kann dazu führen, dass der Knoten den bestehenden Aktivierungsblock ablehnt und einer inkompatiblen Kette folgt. Dies ist nicht die Miner-Identität, die in jeder Coinbase angezeigt wird.',
-    3303: 'Verwenden Sie eine Zeile druckbares ASCII ohne führende oder nachgestellte Leerzeichen.',
   } satisfies LangDict,
   pl_PL: {
     // main.ts
@@ -1279,7 +1271,7 @@ export default {
     2914: 'Domyślnie',
     3000: 'Potwierdzam',
     3002: 'Przystąpienie do łańcucha RDTS',
-    3004: 'Reduced Data Temporary Softfork („RDTS”) z BIP-110 oddzielił się od łańcucha śledzonego przez Bitcoin Core na bloku 961 632. Ten pakiet śledzi ten osobny łańcuch. Bitcoin Knots v29.4.1.knots20260508rc4 od bloku 961 640 zmienia proof of work na BLAKE2b z nagłówkiem v2 i wymaga nagłówka konsensusu „8-30 NYPost Deride And Conquer”. Aktualizacja istniejącego węzła RDTS może spowodować głęboką reorganizację z bloków SHA256d po 961 639. Łańcuchy nie mają ochrony przed powtórzeniem.',
+    3004: 'Reduced Data Temporary Softfork („RDTS”) z BIP-110 oddzielił się od łańcucha śledzonego przez Bitcoin Core na bloku 961 632. Ten pakiet śledzi ten osobny łańcuch. Bitcoin Knots v29.4.1.knots20260508rc5 od bloku 961 640 zmienia proof of work na BLAKE2b z nagłówkiem v2 i wymaga nagłówka konsensusu „8-30 NYPost Deride And Conquer”. Aktualizacja istniejącego węzła RDTS może spowodować głęboką reorganizację z bloków SHA256d po 961 639. Łańcuchy nie mają ochrony przed powtórzeniem.',
     3005: 'Proszę potwierdzić',
     3007: 'Potwierdź, że ta wersja śledzi osobny łańcuch RDTS i od bloku 961 640 używa proof of work BLAKE2b z nagłówkiem v2.',
 
@@ -1304,10 +1296,6 @@ export default {
     2916: 'Budowanie bazy danych sieci',
     2917: 'Nie znaleziono węzłów. Router nie mógł połączyć się z żadnym serwerem reseed, co zwykle oznacza, że ten serwer nie rozwiązuje nazw DNS. Sprawdź System > Serwery DNS.',
     2918: 'Router I2P zgłosił status błędu ${status}',
-    3300: 'Nagłówek BLAKE2b',
-    3301: 'Krytyczny dla konsensusu nagłówek wymagany w bloku aktywacji BLAKE2b. Musi dokładnie odpowiadać łańcuchowi, który chcesz śledzić.',
-    3302: 'Zmiana tej wartości może spowodować odrzucenie istniejącego bloku aktywacji i przejście na niezgodny łańcuch. Nie jest to tożsamość minera widoczna w każdym coinbase.',
-    3303: 'Użyj jednej linii drukowalnych znaków ASCII bez spacji na początku ani na końcu.',
   } satisfies LangDict,
   fr_FR: {
     // main.ts
@@ -1715,7 +1703,7 @@ export default {
     2914: 'Par défaut',
     3000: 'Je confirme',
     3002: 'Adhésion à la chaîne RDTS',
-    3004: "Le Reduced Data Temporary Softfork (« RDTS ») de BIP-110 s'est séparé de la chaîne suivie par Bitcoin Core au bloc 961 632. Ce paquet suit cette chaîne distincte. Bitcoin Knots v29.4.1.knots20260508rc4 passe à la preuve de travail BLAKE2b avec en-tête v2 au bloc 961 640 et exige le titre de consensus « 8-30 NYPost Deride And Conquer ». La mise à niveau d'un nœud RDTS existant peut provoquer une réorganisation profonde abandonnant les blocs SHA256d après 961 639. Les chaînes n'ont aucune protection contre le rejeu.",
+    3004: "Le Reduced Data Temporary Softfork (« RDTS ») de BIP-110 s'est séparé de la chaîne suivie par Bitcoin Core au bloc 961 632. Ce paquet suit cette chaîne distincte. Bitcoin Knots v29.4.1.knots20260508rc5 passe à la preuve de travail BLAKE2b avec en-tête v2 au bloc 961 640 et exige le titre de consensus « 8-30 NYPost Deride And Conquer ». La mise à niveau d'un nœud RDTS existant peut provoquer une réorganisation profonde abandonnant les blocs SHA256d après 961 639. Les chaînes n'ont aucune protection contre le rejeu.",
     3005: 'Veuillez confirmer',
     3007: 'Confirmez que cette version suit la chaîne RDTS distincte et utilise la preuve de travail BLAKE2b avec en-tête v2 à partir du bloc 961 640.',
 
@@ -1740,9 +1728,5 @@ export default {
     2916: 'Construction de la base de données du réseau',
     2917: "Aucun pair trouvé. Le routeur n'a pu joindre aucun serveur de réamorçage, ce qui signifie généralement que ce serveur ne peut pas résoudre les noms DNS. Vérifiez Système > Serveurs DNS.",
     2918: "Le routeur I2P a signalé le statut d'erreur ${status}",
-    3300: 'Titre BLAKE2b',
-    3301: "Titre critique pour le consensus requis dans le bloc d'activation BLAKE2b. Il doit correspondre exactement à la chaîne que vous souhaitez suivre.",
-    3302: "Modifier cette valeur peut amener le nœud à rejeter le bloc d'activation établi et à suivre une chaîne incompatible. Il ne s'agit pas de l'identité du mineur affichée dans chaque coinbase.",
-    3303: 'Utilisez une seule ligne ASCII imprimable sans espace au début ni à la fin.',
   } satisfies LangDict,
 }

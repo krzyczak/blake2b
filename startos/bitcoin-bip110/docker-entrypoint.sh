@@ -15,6 +15,7 @@ case "$MODE" in
 fixedseeds=0'
         MODE_CONFIG='testactivationheight=blake2b@20'
         DEFAULT_HEADLINE=BIP110-LAB
+        HEADLINE_CONFIG="blake2b_headline=${BITCOIN_BLAKE2B_HEADLINE:-$DEFAULT_HEADLINE}"
         BOOTSTRAP_DUMMY=1
         ;;
     testnet4)
@@ -25,7 +26,7 @@ fixedseeds=0'
 fixedseeds=1
 prune=550'
         MODE_CONFIG=''
-        DEFAULT_HEADLINE=Totoro
+        HEADLINE_CONFIG=''
         BOOTSTRAP_DUMMY=0
         ;;
     signet)
@@ -36,7 +37,7 @@ prune=550'
 fixedseeds=1
 prune=550'
         MODE_CONFIG=''
-        DEFAULT_HEADLINE=Totoro
+        HEADLINE_CONFIG=''
         BOOTSTRAP_DUMMY=0
         ;;
     regtest)
@@ -46,7 +47,7 @@ prune=550'
         PEER_CONFIG='dnsseed=0
 fixedseeds=0'
         MODE_CONFIG=''
-        DEFAULT_HEADLINE=Totoro
+        HEADLINE_CONFIG=''
         BOOTSTRAP_DUMMY=0
         ;;
     *)
@@ -54,8 +55,6 @@ fixedseeds=0'
         exit 64
         ;;
 esac
-
-HEADLINE="${BITCOIN_BLAKE2B_HEADLINE:-$DEFAULT_HEADLINE}"
 
 mkdir -p "$DATA_DIR"
 umask 077
@@ -82,9 +81,9 @@ rpcallowip=0.0.0.0/0
 rpcuser=datum
 rpcpassword=bip110-regtest-lab
 
-# The public testnet4 fork requires Totoro; dummy mode retains BIP110-LAB so
-# existing private chains remain compatible.
-blake2b_headline=${HEADLINE}
+# RC5 accepts headline overrides only on regtest with an explicit BLAKE2b
+# activation height, so only the dummy mode may set one.
+${HEADLINE_CONFIG}
 ${MODE_CONFIG}
 
 disablewallet=1

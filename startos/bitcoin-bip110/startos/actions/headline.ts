@@ -7,12 +7,12 @@ const headlineInputSpec = sdk.InputSpec.of({
   headline: sdk.Value.text({
     name: i18n('BLAKE2b Headline'),
     description: i18n(
-      'Consensus-critical headline for the currently selected network. It must exactly match the value announced for that Knots release candidate.',
+      'Consensus-critical headline for the isolated dummy chain activation block.',
     ),
     warning: i18n(
       'An incorrect headline can make the node reject the BLAKE2b activation block. This is not the explorer-visible miner name.',
     ),
-    default: 'Totoro',
+    default: 'BIP110-LAB',
     required: true,
     minLength: 1,
     maxLength: 90,
@@ -29,35 +29,37 @@ const headlineInputSpec = sdk.InputSpec.of({
 
 export const headlineConfig = sdk.Action.withInput(
   'headline-config',
-  {
-    name: i18n('Set BLAKE2b Headline'),
-    description: i18n(
-      'Set a separate blake2b_headline override for the currently selected network.',
-    ),
-    warning: i18n(
-      'Only change this when the Knots release instructions publish a new exact headline.',
-    ),
-    allowedStatuses: 'any',
-    group: i18n('Configuration'),
-    visibility: 'enabled',
+  async () => {
+    const network =
+      (await networkSettingsFile.read((value) => value.network).once()) ??
+      'dummy'
+
+    return {
+      name: i18n('Set BLAKE2b Headline'),
+      description: i18n(
+        'Set the regtest-only blake2b_headline override for the isolated dummy chain.',
+      ),
+      warning: i18n(
+        'Changing it creates a different dummy activation block and can make existing chain data incompatible.',
+      ),
+      allowedStatuses: 'any',
+      group: i18n('Configuration'),
+      visibility: network === 'dummy' ? 'enabled' : 'hidden',
+    }
   },
   headlineInputSpec,
   async () => {
     const settings = await networkSettingsFile.read((value) => value).once()
-    const network = settings?.network ?? 'dummy'
     return {
-      headline:
-        settings?.headlines[network] ?? defaultHeadlineForNetwork(network),
+      headline: settings?.headlines.dummy ?? defaultHeadlineForNetwork('dummy'),
     }
   },
   async ({ effects, input }) => {
     const settings = await networkSettingsFile.read((value) => value).once()
-    const network = settings?.network ?? 'dummy'
-
     await networkSettingsFile.merge(effects, {
       headlines: {
         ...settings?.headlines,
-        [network]: input.headline,
+        dummy: input.headline,
       },
     })
 

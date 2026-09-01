@@ -17,12 +17,12 @@ const dict = {
   'Testnet4 and signet download and validate their real public chains. Regtest has no canonical public peer network.': 13,
   Configuration: 14,
   'BLAKE2b Headline': 15,
-  'Consensus-critical headline for the currently selected network. It must exactly match the value announced for that Knots release candidate.': 16,
+  'Consensus-critical headline for the isolated dummy chain activation block.': 16,
   'An incorrect headline can make the node reject the BLAKE2b activation block. This is not the explorer-visible miner name.': 17,
   'Use one line of printable ASCII without leading or trailing spaces.': 18,
   'Set BLAKE2b Headline': 19,
-  'Set a separate blake2b_headline override for the currently selected network.': 20,
-  'Only change this when the Knots release instructions publish a new exact headline.': 21,
+  'Set the regtest-only blake2b_headline override for the isolated dummy chain.': 20,
+  'Changing it creates a different dummy activation block and can make existing chain data incompatible.': 21,
 } as const
 
 export type I18nKey = keyof typeof dict

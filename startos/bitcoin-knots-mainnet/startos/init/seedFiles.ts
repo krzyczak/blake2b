@@ -1,7 +1,6 @@
 import {
   archivalMin,
   bitcoinConfFile,
-  blake2bHeadline,
   defaultDatacarriercost,
   defaultDbbatchsize,
   defaultDbcache,
@@ -36,14 +35,16 @@ export const seedFiles = sdk.setupOnInit(async (effects, kind) => {
         // start. Not enforced — see versions/current.ts.
         consensusrules: 'rdts',
         maxtipage: defaultMaxtipage,
-        blake2b_headline: blake2bHeadline,
+        blake2b_headline: undefined,
       },
     })
   } else {
-    // Preserve the loose tip-age limit on update/restore without replacing a
-    // headline the user selected through the package action.
+    // Preserve the loose tip-age limit and remove RC4's obsolete headline.
     await bitcoinConfFile.merge(effects, {
-      raw: { maxtipage: defaultMaxtipage },
+      raw: {
+        maxtipage: defaultMaxtipage,
+        blake2b_headline: undefined,
+      },
     })
   }
 })

@@ -1,6 +1,6 @@
 import { IMPOSSIBLE, VersionInfo } from '@start9labs/start-sdk'
 import { rm } from 'fs/promises'
-import { bitcoinConfFile, blake2bHeadline } from '../fileModels/bitcoin.conf'
+import { bitcoinConfFile } from '../fileModels/bitcoin.conf'
 import { storeJson } from '../fileModels/store.json'
 /**
  * Reset all mempool settings to undefined so the new flavor's upstream
@@ -69,14 +69,15 @@ const leavingRdtsFlavor = { reconsiderInvalidTips: true }
 const setConsensusRules = {
   raw: {
     consensusrules: 'rdts' as const,
-    blake2b_headline: blake2bHeadline,
+    blake2b_headline: undefined,
   },
 }
 
 /**
- * Flavor-only keys must be removed before handoff. The other binaries do not
- * understand `blake2b_headline`; leaving `maxtipage` behind would also make a
- * node on their chain call itself synced up to two weeks late.
+ * Flavor-only keys must be removed before handoff. Leaving `maxtipage` behind
+ * would make a node on the other chain call itself synced up to two weeks late.
+ * RC4's headline is also removed because RC5 no longer uses it on mainnet and
+ * sibling binaries may reject it.
  */
 const clearFlavorKeys = {
   raw: {
@@ -87,26 +88,30 @@ const clearFlavorKeys = {
 }
 
 export const current = VersionInfo.of({
-  version: '#knots:29.4:11',
+  version: '#knots:29.4:12',
   releaseNotes: {
-    en_US: `- Update Bitcoin Knots to v29.4.1.knots20260508rc4.
-- Activate BLAKE2b header-v2 proof of work from mainnet block 961,640.
-- Make the consensus-critical BLAKE2b headline configurable; the default remains "8-30 NYPost Deride And Conquer".`,
-    es_ES: `- Actualiza Bitcoin Knots a v29.4.1.knots20260508rc4.
-- Activa la prueba de trabajo BLAKE2b con cabecera v2 desde el bloque 961.640 de mainnet.
-- Permite configurar el titular BLAKE2b crítico para el consenso; el valor predeterminado sigue siendo "8-30 NYPost Deride And Conquer".`,
-    de_DE: `- Aktualisiert Bitcoin Knots auf v29.4.1.knots20260508rc4.
-- Aktiviert BLAKE2b-Proof-of-Work mit Header v2 ab Mainnet-Block 961.640.
-- Macht die konsenskritische BLAKE2b-Schlagzeile konfigurierbar; der Standard bleibt „8-30 NYPost Deride And Conquer“.`,
-    pl_PL: `- Aktualizuje Bitcoin Knots do v29.4.1.knots20260508rc4.
-- Aktywuje proof of work BLAKE2b z nagłówkiem v2 od bloku mainnet 961 640.
-- Umożliwia konfigurację krytycznego dla konsensusu nagłówka BLAKE2b; wartością domyślną pozostaje „8-30 NYPost Deride And Conquer“.`,
-    fr_FR: `- Met à jour Bitcoin Knots vers v29.4.1.knots20260508rc4.
-- Active la preuve de travail BLAKE2b à en-tête v2 à partir du bloc mainnet 961 640.
-- Rend configurable le titre BLAKE2b critique pour le consensus ; la valeur par défaut reste « 8-30 NYPost Deride And Conquer ».`,
+    en_US: `- Update Bitcoin Knots to v29.4.1.knots20260508rc5.
+- Use RC5's hardcoded mainnet BLAKE2b headline and activation checkpoint.
+- Remove the obsolete blake2b_headline setting during upgrade.`,
+    es_ES: `- Actualiza Bitcoin Knots a v29.4.1.knots20260508rc5.
+- Usa el titular BLAKE2b de mainnet y el punto de control de activación integrados en RC5.
+- Elimina la opción obsoleta blake2b_headline durante la actualización.`,
+    de_DE: `- Aktualisiert Bitcoin Knots auf v29.4.1.knots20260508rc5.
+- Verwendet die in RC5 fest eingebaute Mainnet-BLAKE2b-Schlagzeile und den Aktivierungs-Checkpoint.
+- Entfernt beim Upgrade die veraltete Option blake2b_headline.`,
+    pl_PL: `- Aktualizuje Bitcoin Knots do v29.4.1.knots20260508rc5.
+- Używa wbudowanego w RC5 nagłówka BLAKE2b mainnet i punktu kontrolnego aktywacji.
+- Usuwa przestarzałą opcję blake2b_headline podczas aktualizacji.`,
+    fr_FR: `- Met à jour Bitcoin Knots vers v29.4.1.knots20260508rc5.
+- Utilise le titre BLAKE2b mainnet et le point de contrôle d'activation intégrés à RC5.
+- Supprime l'option obsolète blake2b_headline pendant la mise à niveau.`,
   },
   migrations: {
-    up: async ({ effects }) => {},
+    up: async ({ effects }) => {
+      await bitcoinConfFile.merge(effects, {
+        raw: { blake2b_headline: undefined },
+      })
+    },
     down: IMPOSSIBLE,
     // Keyed by Core major series as caret ranges — one entry per Core
     // major, not per Core `:N`. Range-keyed `migrations.other` requires

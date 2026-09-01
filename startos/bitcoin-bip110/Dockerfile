@@ -1,7 +1,7 @@
 FROM debian:bookworm-slim AS builder
 
-ARG BITCOIN_COMMIT=dc82be77dd741dfa63e1f816367b15364d55b051
-ARG BITCOIN_TARBALL_SHA256=ebb740036801b1671c8d771118982ba860ce13f04be9bed633f07342a3121189
+ARG BITCOIN_COMMIT=306523a567d5cf17d1939dc485be57a5ae83cfe7
+ARG BITCOIN_TARBALL_SHA256=887216b39ef40c2b3c003ae0b7fde625174258d9e517ec0fa49775aacb82179f
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
         libboost-dev \
         libevent-dev \
+        patch \
         pkgconf \
         python3 \
     && rm -rf /var/lib/apt/lists/*
@@ -22,6 +23,15 @@ RUN curl --fail --location --silent --show-error \
     && echo "${BITCOIN_TARBALL_SHA256}  /tmp/bitcoin.tar.gz" | sha256sum --check --strict \
     && tar --extract --gzip --file /tmp/bitcoin.tar.gz --strip-components=1 \
     && rm /tmp/bitcoin.tar.gz
+
+# RC5 stopped exposing the activation headline through getblocktemplate.
+# The companion DATUM build still consumes that field for the dummy chain's
+# height-20 activation block, so restore only the RPC field. Consensus remains
+# RC5's implementation and parameters.
+COPY patches/restore-blake2b-headline-gbt.patch /tmp/
+RUN patch --directory=/src --strip=1 \
+        < /tmp/restore-blake2b-headline-gbt.patch \
+    && rm /tmp/restore-blake2b-headline-gbt.patch
 
 # Keep this bounded: an unqualified `--parallel` starts hundreds of cc1plus
 # processes and makes GitHub's hosted runners thrash instead of completing.

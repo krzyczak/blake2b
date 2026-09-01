@@ -1,0 +1,14 @@
+diff --git a/src/rpc/mining.cpp b/src/rpc/mining.cpp
+index e4cefa3b30..24a3a6080c 100644
+--- a/src/rpc/mining.cpp
++++ b/src/rpc/mining.cpp
+@@ -991,6 +991,9 @@ static RPCHelpMan getblocktemplate()
+     }
+
+     UniValue aux(UniValue::VOBJ);
++    if (block.m_height == consensusParams.DeploymentHeight(Consensus::DEPLOYMENT_BLAKE2B)) {
++        aux.pushKV("blake2b_headline", HexStr(consensusParams.Blake2bHeadline));
++    }
+
+     CBlockHeader block_header{block};
+     // Update nTime (and potentially nBits)

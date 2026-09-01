@@ -19,7 +19,6 @@ export const otherConfig = sdk.Action.withInput(
 
   // form input specification
   fullConfigSpec.filter({
-    blake2bHeadline: true,
     softwareexpiry: true,
     zmqEnabled: true,
     txindex: true,

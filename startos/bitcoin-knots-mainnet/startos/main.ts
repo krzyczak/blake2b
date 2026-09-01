@@ -2,7 +2,7 @@ import { healthFns, TOML } from '@start9labs/start-sdk'
 import { access, rm, writeFile } from 'fs/promises'
 import { request } from 'node:https'
 import { socksHostId, socksPort } from 'tor-startos/startos/utils'
-import { bitcoinConfFile, blake2bHeadline } from './fileModels/bitcoin.conf'
+import { bitcoinConfFile } from './fileModels/bitcoin.conf'
 import { i2pdConfFile } from './fileModels/i2pd.conf'
 import { storeJson } from './fileModels/store.json'
 import {
@@ -133,10 +133,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
     return { cancel: false }
   })
 
-  const bitcoinArgs: string[] = [
-    `-onion=${torSocks}`,
-    `-blake2b_headline=${bitcoinConf.raw?.blake2b_headline ?? blake2bHeadline}`,
-  ]
+  const bitcoinArgs: string[] = [`-onion=${torSocks}`]
 
   if (reindexBlockchain) {
     bitcoinArgs.push('-reindex')
