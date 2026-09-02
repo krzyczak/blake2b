@@ -63,7 +63,7 @@ export const defaultMaxtipage = 14 * 24 * 60 * 60
 export const shape = z
   .object({
     maxtipage: z.literal(defaultMaxtipage).optional().catch(defaultMaxtipage),
-    // RC5 hardcodes the mainnet headline and treats this as regtest-only.
+    // Knots 29.4.1 hardcodes the mainnet headline and treats this as regtest-only.
     // Keep it modelled as undefined so writing the file removes RC4 values.
     blake2b_headline: z.undefined().optional().catch(undefined),
 

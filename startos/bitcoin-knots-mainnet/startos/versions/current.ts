@@ -76,8 +76,8 @@ const setConsensusRules = {
 /**
  * Flavor-only keys must be removed before handoff. Leaving `maxtipage` behind
  * would make a node on the other chain call itself synced up to two weeks late.
- * RC4's headline is also removed because RC5 no longer uses it on mainnet and
- * sibling binaries may reject it.
+ * RC4's headline is also removed because Knots 29.4.1 no longer uses it on
+ * mainnet and sibling binaries may reject it.
  */
 const clearFlavorKeys = {
   raw: {
@@ -88,23 +88,23 @@ const clearFlavorKeys = {
 }
 
 export const current = VersionInfo.of({
-  version: '#knots:29.4:12',
+  version: '#knots:29.4:13',
   releaseNotes: {
-    en_US: `- Update Bitcoin Knots to v29.4.1.knots20260508rc5.
-- Use RC5's hardcoded mainnet BLAKE2b headline and activation checkpoint.
-- Remove the obsolete blake2b_headline setting during upgrade.`,
-    es_ES: `- Actualiza Bitcoin Knots a v29.4.1.knots20260508rc5.
-- Usa el titular BLAKE2b de mainnet y el punto de control de activación integrados en RC5.
-- Elimina la opción obsoleta blake2b_headline durante la actualización.`,
-    de_DE: `- Aktualisiert Bitcoin Knots auf v29.4.1.knots20260508rc5.
-- Verwendet die in RC5 fest eingebaute Mainnet-BLAKE2b-Schlagzeile und den Aktivierungs-Checkpoint.
-- Entfernt beim Upgrade die veraltete Option blake2b_headline.`,
-    pl_PL: `- Aktualizuje Bitcoin Knots do v29.4.1.knots20260508rc5.
-- Używa wbudowanego w RC5 nagłówka BLAKE2b mainnet i punktu kontrolnego aktywacji.
-- Usuwa przestarzałą opcję blake2b_headline podczas aktualizacji.`,
-    fr_FR: `- Met à jour Bitcoin Knots vers v29.4.1.knots20260508rc5.
-- Utilise le titre BLAKE2b mainnet et le point de contrôle d'activation intégrés à RC5.
-- Supprime l'option obsolète blake2b_headline pendant la mise à niveau.`,
+    en_US: `- Update Bitcoin Knots to v29.4.1.knots20260508.
+- Improve NODE_BLAKE2B peer discovery and outbound selection.
+- Update mainnet assumevalid and minimum chain work.`,
+    es_ES: `- Actualiza Bitcoin Knots a v29.4.1.knots20260508.
+- Mejora el descubrimiento y la selección de pares salientes NODE_BLAKE2B.
+- Actualiza assumevalid y el trabajo mínimo de cadena de mainnet.`,
+    de_DE: `- Aktualisiert Bitcoin Knots auf v29.4.1.knots20260508.
+- Verbessert die Erkennung und Auswahl ausgehender NODE_BLAKE2B-Peers.
+- Aktualisiert AssumeValid und die Mindest-Chainwork des Mainnets.`,
+    pl_PL: `- Aktualizuje Bitcoin Knots do v29.4.1.knots20260508.
+- Usprawnia wykrywanie i wybór wychodzących peerów NODE_BLAKE2B.
+- Aktualizuje assumevalid i minimalny chain work sieci mainnet.`,
+    fr_FR: `- Met à jour Bitcoin Knots vers v29.4.1.knots20260508.
+- Améliore la découverte et la sélection sortante des pairs NODE_BLAKE2B.
+- Met à jour assumevalid et le travail de chaîne minimal du réseau principal.`,
   },
   migrations: {
     up: async ({ effects }) => {
