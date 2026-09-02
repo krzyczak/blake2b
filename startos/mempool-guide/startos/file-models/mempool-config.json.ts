@@ -10,6 +10,7 @@ import {
   poolsTreeUrl,
   PROFILES,
   DEFAULT_PROFILE,
+  DEFAULT_BLOCK_WEIGHT_UNITS,
 } from '../utils'
 
 const mempoolSection = z.object({
@@ -27,7 +28,9 @@ const mempoolSection = z.object({
   CACHE_ENABLED: z.boolean().catch(true),
   CLEAR_PROTECTION_MINUTES: z.number().catch(20),
   RECOMMENDED_FEE_PERCENTILE: z.number().catch(50),
-  BLOCK_WEIGHT_UNITS: z.number().catch(4000000),
+  BLOCK_WEIGHT_UNITS: z
+    .union([z.literal(800_000), z.literal(4_000_000)])
+    .catch(DEFAULT_BLOCK_WEIGHT_UNITS),
   INITIAL_BLOCKS_AMOUNT: z.number().catch(8),
   MEMPOOL_BLOCKS_AMOUNT: z
     .number()

@@ -69,6 +69,12 @@ const dict = {
   "Route Mempool's outbound internet requests through Tor. Useful where an ISP or national firewall blocks the endpoints Mempool reads from, and where the server's own name resolution is unreliable — a SOCKS proxy resolves hostnames at the proxy rather than locally.": 70,
   'This requires the Tor service to be installed and running.': 71,
   'This server could not resolve an external hostname. Mempool is otherwise unaffected — Bitcoin, the Electrum indexer, and the database are reached by address — but fiat exchange rates will be unavailable. Set explicit DNS servers under System > DNS on your server, and check any VPN or StartTunnel gateway you have configured: a gateway supplies its own resolver, which stops working whenever the tunnel does.': 72,
+  'Maximum Block Weight': 73,
+  'Applied to projected-block construction, fee estimation, and how full mined blocks appear in the frontend.': 74,
+  '800,000 WU (Mempool Guide default)': 75,
+  '4,000,000 WU (standard Bitcoin)': 76,
+  'Block Weight Limit': 77,
+  'Select the maximum block weight used by backend projections and frontend block-fill visualization. The reduced 800,000 WU limit matches Mempool Guide; 4,000,000 WU restores the previous standard Bitcoin limit. Changes apply on the next service restart.': 78,
 } as const
 
 export type I18nKey = keyof typeof dict

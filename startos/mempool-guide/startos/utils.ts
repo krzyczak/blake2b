@@ -160,6 +160,20 @@ export const PROFILES: Record<
 
 export const DEFAULT_PROFILE: PerformanceProfile = 'low-cpu'
 
+// Mempool Guide's reduced block-weight limit and Bitcoin's previous standard
+// limit. The action stores the numeric value in mempool-config.json; these keys
+// exist only to give the StartOS select input stable string values.
+export type BlockWeightUnits = 800_000 | 4_000_000
+export type BlockWeightLimit = 'reduced' | 'standard'
+
+export const BLOCK_WEIGHT_LIMITS: Record<BlockWeightLimit, BlockWeightUnits> = {
+  reduced: 800_000,
+  standard: 4_000_000,
+}
+
+export const DEFAULT_BLOCK_WEIGHT_UNITS: BlockWeightUnits =
+  BLOCK_WEIGHT_LIMITS.reduced
+
 // totalmem() is the service-container share, not host RAM: StartOS caps it 1 GiB
 // below MemTotal, so a 16 GB device reports ~14.6 GiB — less with an iGPU carve-out.
 export const LOW_RAM_BYTES = 12 * 1024 ** 3

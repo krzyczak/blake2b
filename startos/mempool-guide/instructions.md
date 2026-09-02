@@ -40,6 +40,7 @@ Open the **Web UI** interface to reach Mempool. The home page shows the live mem
 
 - **Select Indexer** — switch the Electrum backend between Fulcrum and Electrs. Mempool's dependency set updates accordingly.
 - **Enable Lightning** — choose LND, Core Lightning, or none for the Lightning tab's data source. The selected node is mounted read-only. On a low-memory box the form carries a warning: the Lightning network sync is memory-hungry, and turning it on alongside Bitcoin and your indexer can tip such a box into out-of-memory crashes. You can still proceed.
+- **Block Weight Limit** — choose **800,000 WU** (default, matching Mempool Guide's reduced block limit) or **4,000,000 WU** (the previous standard Bitcoin limit). The same value drives backend projected blocks, fee estimation, and the frontend's mined-block fill height. Restart Mempool after changing it; no indexed data or cache is deleted.
 - **Indexing and Performance** — tune backend behavior on a single form:
   - **Performance Profile** — pick **Low-CPU** (default; polls bitcoind every 8s, projects 4 future blocks), **Balanced** (4s / 6 blocks), or **Responsive** (2s / 8 blocks; highest CPU). The Mempool backend rebuilds its block projection on every poll, so this is the main lever for CPU usage on low-power devices.
   - **Enable Statistics** — leave on (default) for the tx/s and vbytes/s dashboard charts; turn off to skip the 1 Hz sampler and periodic MariaDB writes.
@@ -60,7 +61,7 @@ If that happens, the service log says so in a line at the top of a start. The ca
 
 ## Backups
 
-StartOS backs up your Mempool **configuration** — your indexer, Lightning, and indexing selections. Everything Mempool displays is derived from your own Bitcoin node, so the database itself is not copied into the backup; after a restore, Mempool rebuilds it by re-indexing from your node. Recent blocks and fees appear quickly, and full historical charts — mining, hashrate, and any block-summary indexing you enabled — backfill over the next few hours, adding some load on your Bitcoin node while they catch up.
+StartOS backs up your Mempool **configuration** — your indexer, Lightning, block-weight, and indexing selections. Everything Mempool displays is derived from your own Bitcoin node, so the database itself is not copied into the backup; after a restore, Mempool rebuilds it by re-indexing from your node. Recent blocks and fees appear quickly, and full historical charts — mining, hashrate, and any block-summary indexing you enabled — backfill over the next few hours, adding some load on your Bitcoin node while they catch up.
 
 ## Limitations
 

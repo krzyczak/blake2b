@@ -12,7 +12,7 @@
 [Mempool Guide](https://mempool.guide) is the BIP110-aware fork of Mempool maintained in [`Retropex/mempool`](https://github.com/Retropex/mempool). On StartOS it runs entirely against your own Bitcoin node and your own Electrum indexer, with every external data source that upstream reaches for either disabled or optional.
 
 - **Fork repo:** <https://github.com/Retropex/mempool>
-- **Pinned source:** `c4aa9002e8122b9121499f3bfcf23a3dfe1f5a81`
+- **Pinned source:** `9a536b9af66e9f6fc8f5d6a230d9a00567d189ee`
 - **Package repo:** <https://github.com/krzyczak/blake2b/tree/master/startos/mempool-guide>
 
 This package deliberately uses the unique StartOS id `mempool-guide`. It can be installed beside the official `mempool` package, and its config, cache, and MariaDB volumes are completely separate. Both packages can read the same Bitcoin and Electrum services.
@@ -82,7 +82,7 @@ Two models: upstream's configuration file, and a small store for state that has 
 
 | File                  | Volume    | Format | Modelled                | Written by                             |
 | --------------------- | --------- | ------ | ----------------------- | -------------------------------------- |
-| `mempool-config.json` | `config`  | JSON   | Yes — `FileHelper.json` | Install, every init, and three actions |
+| `mempool-config.json` | `config`  | JSON   | Yes — `FileHelper.json` | Install, every init, and four actions  |
 | `store.json`          | `startos` | JSON   | Yes — `FileHelper.json` | The Select Indexer and Tor actions     |
 
 `store.json` holds which Electrum indexer you selected and whether external requests should go over Tor. Both are StartOS state — intent, and the discriminator that decides which optional dependencies exist — and deliberately not part of upstream's file. The addresses that intent resolves to are written into `mempool-config.json` instead, which is what lets the Tor proxy be switched off when Tor is uninstalled without forgetting that you asked for it.
@@ -102,6 +102,7 @@ Two defaults depart from upstream's:
 | Key                                              | Here               | Upstream in-source | Why                                                                                                                                         |
 | ------------------------------------------------ | ------------------ | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `MEMPOOL.POLL_RATE_MS` / `MEMPOOL_BLOCKS_AMOUNT` | 8000 ms / 4 blocks | 2000 ms / 8 blocks | Home hardware is the common case; the Responsive profile restores upstream's values                                                         |
+| `MEMPOOL.BLOCK_WEIGHT_UNITS`                      | 800,000 WU         | 4,000,000 WU       | Matches Mempool Guide's reduced limit; the Block Weight Limit action restores the standard Bitcoin value                                    |
 | `MEMPOOL.STDOUT_LOG_MIN_PRIORITY`                | `info`             | `debug`            | Debug is very noisy in normal operation — but see [Actions](#actions) before a backfill                                                     |
 | `MEMPOOL.EXTERNAL_MAX_RETRY` / `_RETRY_INTERVAL` | 3 / 5 s            | 1 / 0 s            | One attempt made a momentary blip indistinguishable from an outage, and left Tor's per-retry circuit rotation with no second circuit to try |
 | `MEMPOOL.POOLS_JSON_URL` / `_TREE_URL`           | loopback           | GitHub             | The bundled Retropex snapshot, so no start needs the network and no boot reaches out to `api.github.com`                                    |
@@ -144,7 +145,7 @@ The order that matters: Bitcoin must be synced, and the indexer must have finish
 
 ## Actions
 
-Five actions, all user-facing.
+Six actions, all user-facing.
 
 ### Select Indexer
 
@@ -172,6 +173,15 @@ The tuning form: a performance profile, mempool statistics, the log level, and f
 - **Repeat safety:** idempotent as a write; turning an indexing toggle back off does not undo a backfill already done.
 - **The backfill looks like nothing is happening.** Upstream logs per-block progress at debug priority only, so at the default log level the service log sits idle for hours while the backfill runs. The service announces this at every start with indexing on, and the form's Log Level control is what surfaces the progress. Restarting the service interrupts the backfill and delays completion. Intermittent 503 retries from Bitcoin during it are expected.
 - **Block Audit requires Block Summaries Indexing**, which the form's descriptions state but does not enforce.
+
+### Block Weight Limit
+
+Chooses the maximum block weight used by both backend block projections and the frontend's block-fill visualization.
+
+- **What it changes:** `MEMPOOL.BLOCK_WEIGHT_UNITS` in `mempool-config.json`, plus the `BLOCK_WEIGHT_UNITS` environment value passed to the frontend.
+- **Choices:** 800,000 WU (default, matching Mempool Guide) or 4,000,000 WU (the previous standard Bitcoin limit).
+- **Cost:** a configuration write; the new value applies on the next service restart.
+- **Repeat safety:** idempotent and non-destructive. Existing indexed blocks and the backend cache are untouched.
 
 ### Route External Requests Over Tor
 
@@ -275,6 +285,7 @@ startos_managed_env_vars:
   - MYSQL_PASSWORD
   - PROXIED_SERVICES # frontend; redirects the accelerator upstream off mempool.space
   - PROXIED_SERVICES_HOST
+  - BLOCK_WEIGHT_UNITS # frontend; mirrors MEMPOOL.BLOCK_WEIGHT_UNITS
   - LIGHTNING # frontend, only when a Lightning node is selected
 dependencies:
   - bitcoind # required, running
@@ -289,6 +300,7 @@ actions:
   - select-indexer
   - enable-lightning
   - indexing-and-performance
+  - block-weight-limit
   - tor-proxy
   - clear-backend-cache # only-stopped
 tasks:
