@@ -77,7 +77,12 @@ HISTORY_SOURCE_NODE_JSON="$(json_string "$HISTORY_SOURCE_NODE")"
 mkdir -p "$DATA_DIR"
 umask 077
 
-cat > "$DATA_DIR/config.json" <<EOF
+# Seed user settings only once; the web dashboard owns them after that.
+# Write atomically so a failed merge leaves the last working config intact.
+GENERATED_CONFIG="$(mktemp "$DATA_DIR/config.generated.XXXXXX")"
+MERGED_CONFIG="$(mktemp "$DATA_DIR/config.merged.XXXXXX")"
+trap 'rm -f "$GENERATED_CONFIG" "$MERGED_CONFIG"' EXIT HUP INT TERM
+cat > "$GENERATED_CONFIG" <<EOF
 {
   "bitcoind": {
     ${RPC_AUTH_CONFIG},
@@ -106,7 +111,7 @@ cat > "$DATA_DIR/config.json" <<EOF
     "listen_addr": "0.0.0.0",
     "listen_port": 7152,
     "allow_insecure_auth": true,
-    "modify_conf": false
+    "modify_conf": true
   },
   "logger": {
     "log_to_console": true,
@@ -117,5 +122,29 @@ cat > "$DATA_DIR/config.json" <<EOF
   "datum": ${POOL_CONFIG_JSON}
 }
 EOF
+
+if [ -f "$DATA_DIR/config.json" ]; then
+    jq --slurp '
+      .[0] as $managed | .[1] as $saved
+      | if ($saved | type) != "object" then error("Invalid saved DATUM config") else
+          $managed * $saved
+          | .bitcoind |= (del(.rpcuser, .rpcpassword, .rpccookiefile)
+              + ($managed.bitcoind | {rpcurl} +
+                  (if has("rpccookiefile") then {rpccookiefile} else {rpcuser, rpcpassword} end)))
+          | .api = $managed.api
+          | .stratum.listen_addr = $managed.stratum.listen_addr
+          | .stratum.listen_port = $managed.stratum.listen_port
+          | .mining.history_file = $managed.mining.history_file
+          | .mining.history_source_node = $managed.mining.history_source_node
+          | .mining.abw_verify_all_shares_on_disclosure = true
+          | del(.mining.pow_algorithm)
+        end
+    ' "$GENERATED_CONFIG" "$DATA_DIR/config.json" > "$MERGED_CONFIG"
+else
+    cp "$GENERATED_CONFIG" "$MERGED_CONFIG"
+fi
+mv "$MERGED_CONFIG" "$DATA_DIR/config.json"
+rm -f "$GENERATED_CONFIG"
+trap - EXIT HUP INT TERM
 
 exec /app/datum_gateway --config "$DATA_DIR/config.json"

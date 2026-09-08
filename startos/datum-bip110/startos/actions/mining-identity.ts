@@ -1,7 +1,10 @@
 import {
+  readMiningSettings,
+  saveMiningSettings,
+} from '../file-models/gateway-config.json'
+import {
   defaultCoinbaseTagPrimary,
   defaultCoinbaseTagSecondary,
-  miningSettingsFile,
 } from '../file-models/mining-settings.json'
 import {
   coinbaseTagByteLength,
@@ -52,7 +55,7 @@ export const miningIdentity = sdk.Action.withInput(
   },
   miningIdentityInputSpec,
   async () => {
-    const settings = await miningSettingsFile.read((value) => value).once()
+    const settings = await readMiningSettings()
     return {
       coinbaseTagPrimary:
         settings?.coinbaseTagPrimary ?? defaultCoinbaseTagPrimary,
@@ -84,7 +87,7 @@ export const miningIdentity = sdk.Action.withInput(
       )
     }
 
-    await miningSettingsFile.merge(effects, input)
+    await saveMiningSettings(effects, input)
 
     const status = await sdk.getStatus(effects, { packageId }).once()
     if (status?.desired.main === 'running') {

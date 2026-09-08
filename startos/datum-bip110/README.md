@@ -19,14 +19,22 @@ Miners use Sia-style BLAKE2b Stratum on port 23334. Use the Apple miner's
 
 ## Pool settings
 
-**Configure DATUM Pool** persists settings in `/data/startos-mining.json`,
-which StartOS backs up with the package volume, and restarts the gateway.
+Open **Config** in the DATUM web dashboard and sign in with the credentials
+from **Actions → Dashboard Credentials**. Set **Collaborative reward sharing**
+to **require (pooled mining only)**, enter the pool host, port, and public key,
+then set **Minimum share difficulty** and **Target shares per minute** under
+**Advanced**. For full username forwarding, choose **Override Bitcoin Address**
+under **Send Miner Usernames To Pool**, then click **Save**.
+
+The web dashboard and **Actions → Configure DATUM Pool** share
+`/data/config.json`, which StartOS backs up with the package volume.
+Changes that require a gateway restart trigger one automatically.
 Existing installations and fresh installs default to solo mining with
 difficulty 1 and eight shares per minute.
 
 To pool mine, enable the pool and enter its DATUM hostname/IP, port, and
-128-character hexadecimal public key. The initial pool defaults are port
-28915, difficulty 4096, eight shares per minute, worker/full-username
+128-character hexadecimal public key. Enter the values supplied by the pool,
+for example port 28915, difficulty 4096, eight shares per minute, full-username
 forwarding enabled, and pool-only mining enabled. Host, key, numeric ranges,
 and power-of-two difficulty are validated before saving. Invalid stored pool
 settings cause an error instead of silently enabling solo fallback.
@@ -42,8 +50,11 @@ off permits solo fallback to the configured solo payout address. Disabling
 the pool restores solo mode while retaining the saved connection settings.
 The pool and selected node must use the same network and BLAKE2b consensus.
 
-The entrypoint regenerates `/data/config.json` from these persisted settings
-on every start. Manual edits to that generated file do not survive restart.
+The entrypoint seeds the config from legacy `/data/startos-mining.json`
+settings on first creation, then preserves saved mining and pool settings.
+On startup it refreshes the StartOS node RPC connection, dashboard credentials,
+listener addresses/ports, and history location. Use **Select Bitcoin Node**
+to change the node; RPC edits in the DATUM panel are replaced at package restart.
 An explicit pool public key is required; this revision has no key auto-fetch.
 
 ## Local patches
@@ -51,6 +62,8 @@ An explicit pool public key is required; this revision has no key auto-fetch.
 - `browser-auth-compat.patch`: HTTP Basic authentication for protected pages
   through the StartOS HTTPS interface, including rejection when no admin
   password is configured.
+- `web-config.patch`: editable share difficulty/target fields and pool public
+  key validation in the web configuration form.
 - `best-share.patch`: chain-scoped persistent share/block history and API
   endpoints, including confirmed blocks reconstructed after ABW key disclosure.
 - `configured-payout-address.patch`: preserves the configured address's
@@ -73,8 +86,8 @@ network. Pool coinbases distribute rewards according to the pool's outputs.
 
 The dashboard on port 7152 refreshes gateway, miner, share, and job data every
 five seconds. **Dashboard Credentials** returns the generated password.
-Configuration editing is disabled because StartOS owns configuration. Use
-protected pages through StartOS HTTPS; do not expose the internal HTTP port.
+Authenticated configuration editing is enabled. Use protected pages through
+StartOS HTTPS; do not expose the internal HTTP port.
 
 `/data/mining-history.json` stores known-history best work, best work since
 the last recorded block, and accepted block records. The history key contains
@@ -105,7 +118,8 @@ rbenv exec ruby tests/entrypoint.rb
 npm run build
 ```
 
-The Docker build runs `datum_gateway --test`, including the protocol/ABW,
+The Docker build runs the authenticated web editing and restart tests, plus
+`datum_gateway --test`, including the protocol/ABW,
 lab coinbase, submission-response, and persistent-history tests. The StartOS
 workflow runs the controller/configuration checks for x86_64 and aarch64
 before building each package. A live connection still requires the actual

@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import { miningSettingsSchema } from '../startos/file-models/mining-settings.json'
 import {
+  settingsFromGatewayConfig,
+  updateGatewayConfig,
+} from '../startos/file-models/gateway-config.json'
+import {
   defaultPoolSettings,
   poolEnvironment,
   poolSettingsSchema,
@@ -84,4 +88,43 @@ for (const host of ['pool.example', '127.0.0.1', '::1', '2001:db8::1']) {
 }
 console.log(
   'Pool settings: defaults, forwarding, fallback, and validation passed',
+)
+
+const gateway = {
+  datum: { always_pay_self: true },
+  mining: { allow_hasher_time_rolling: false },
+  stratum: { listen_port: 23334 },
+  api: { admin_password: 'existing-password', modify_conf: true },
+}
+const configured = updateGatewayConfig(gateway, { ...legacy, pool })
+assert.deepEqual(settingsFromGatewayConfig(configured, migrated), {
+  ...legacy,
+  pool,
+})
+assert.deepEqual(gateway.datum, { always_pay_self: true }, 'Input was mutated')
+assert.equal(configured.datum.always_pay_self, true)
+assert.deepEqual(configured.api, gateway.api)
+const edited = updateGatewayConfig(configured, {
+  coinbaseTagSecondary: 'Web tag',
+})
+assert.deepEqual(
+  edited.datum,
+  configured.datum,
+  'Identity edit overwrote pool settings',
+)
+assert.equal(
+  settingsFromGatewayConfig(edited, migrated).coinbaseTagSecondary,
+  'Web tag',
+)
+const disabled = updateGatewayConfig(edited, {
+  pool: { ...pool, enabled: false },
+})
+const recovered = settingsFromGatewayConfig(disabled, migrated)
+assert.equal(recovered.pool.enabled, false)
+assert.equal(recovered.pool.host, pool.host)
+assert.equal(recovered.pool.publicKey, pool.publicKey)
+assert.equal(recovered.pool.vardiffMin, 1)
+assert.deepEqual(settingsFromGatewayConfig(null, migrated), migrated)
+console.log(
+  'Web and StartOS settings share the gateway config without overwriting unrelated fields',
 )

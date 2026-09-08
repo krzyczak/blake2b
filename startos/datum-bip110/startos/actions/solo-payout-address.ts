@@ -1,7 +1,8 @@
 import {
-  defaultPayoutAddress,
-  miningSettingsFile,
-} from '../file-models/mining-settings.json'
+  readMiningSettings,
+  saveMiningSettings,
+} from '../file-models/gateway-config.json'
+import { defaultPayoutAddress } from '../file-models/mining-settings.json'
 import { i18n } from '../i18n'
 import { sdk } from '../sdk'
 import { packageId } from '../utils'
@@ -44,13 +45,13 @@ export const soloPayoutAddress = sdk.Action.withInput(
   },
   soloPayoutAddressInputSpec,
   async () => {
-    const settings = await miningSettingsFile.read((value) => value).once()
+    const settings = await readMiningSettings()
     return {
       payoutAddress: settings?.payoutAddress ?? defaultPayoutAddress,
     }
   },
   async ({ effects, input }) => {
-    await miningSettingsFile.merge(effects, {
+    await saveMiningSettings(effects, {
       payoutAddress: input.payoutAddress,
     })
 

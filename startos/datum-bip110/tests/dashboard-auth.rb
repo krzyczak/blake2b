@@ -18,7 +18,7 @@ Dir.mktmpdir('datum-auth-') do |dir|
       bitcoind: { rpcurl: "http://127.0.0.1:#{free_port}", rpcuser: 'test', rpcpassword: 'test' },
       stratum: { listen_addr: '127.0.0.1', listen_port: free_port, vardiff_min: 1 },
       mining: { pool_address: 'mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn' },
-      api: { listen_addr: '127.0.0.1', listen_port: port, admin_password: password, modify_conf: false },
+      api: { listen_addr: '127.0.0.1', listen_port: port, admin_password: password, modify_conf: true },
       logger: { log_to_console: true, log_to_file: false },
       datum: { pool_host: '', pooled_mining_only: false },
     }

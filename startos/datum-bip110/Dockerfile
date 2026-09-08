@@ -12,8 +12,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libjansson-dev \
         libmicrohttpd-dev \
         libsodium-dev \
+        jq \
         patch \
         pkgconf \
+        ruby \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
@@ -29,18 +31,24 @@ COPY browser-auth-compat.patch /tmp/browser-auth-compat.patch
 COPY best-share.patch /tmp/best-share.patch
 COPY configured-payout-address.patch /tmp/configured-payout-address.patch
 COPY lab-compat.patch /tmp/lab-compat.patch
+COPY web-config.patch /tmp/web-config.patch
 COPY dashboard/home.html /src/www/home.html
+COPY docker-entrypoint.sh /tmp/docker-entrypoint.sh
+COPY tests/dashboard-auth.rb tests/dashboard-config.rb /tmp/tests/
 
 RUN patch --fuzz=0 --directory=/src --strip=1 --input=/tmp/browser-auth-compat.patch \
     && patch --fuzz=0 --directory=/src --strip=1 --input=/tmp/best-share.patch \
     && patch --fuzz=0 --directory=/src --strip=1 --input=/tmp/configured-payout-address.patch \
     && patch --fuzz=0 --directory=/src --strip=1 --input=/tmp/lab-compat.patch \
+    && patch --fuzz=0 --directory=/src --strip=1 --input=/tmp/web-config.patch \
     && rm /tmp/browser-auth-compat.patch /tmp/best-share.patch \
-        /tmp/configured-payout-address.patch /tmp/lab-compat.patch
+        /tmp/configured-payout-address.patch /tmp/lab-compat.patch /tmp/web-config.patch
 
 RUN cmake -S /src -B /build -DCMAKE_BUILD_TYPE=Release \
     && cmake --build /build --parallel \
-    && /build/datum_gateway --test
+    && /build/datum_gateway --test \
+    && ruby /tmp/tests/dashboard-auth.rb /build/datum_gateway \
+    && ruby /tmp/tests/dashboard-config.rb /build/datum_gateway /tmp/docker-entrypoint.sh
 
 FROM debian:bookworm-slim
 

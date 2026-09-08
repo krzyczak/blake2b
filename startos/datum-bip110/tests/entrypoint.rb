@@ -26,6 +26,7 @@ Dir.mktmpdir('datum-entrypoint-') do |dir|
   raise 'Solo defaults changed' unless solo.dig('datum', 'pool_host') == '' && solo.dig('stratum', 'vardiff_min') == 1
   raise 'RPC escaping changed' unless solo.dig('bitcoind', 'rpcpassword') == env['DATUM_RPC_PASSWORD']
   raise 'Legacy PoW option remains' if solo['mining'].key?('pow_algorithm')
+  raise 'Dashboard editing is disabled' unless solo.dig('api', 'modify_conf') && solo.dig('api', 'admin_password') == env['DATUM_DASHBOARD_ADMIN_PASSWORD']
   raise 'Unsafe config mode' unless File.stat(config_path).mode & 0o777 == 0o600
   pool_env = {
     'DATUM_POOL_HOST' => 'stratum.abc.xyz',
@@ -37,6 +38,7 @@ Dir.mktmpdir('datum-entrypoint-') do |dir|
     'DATUM_VARDIFF_MIN' => '4096',
     'DATUM_VARDIFF_TARGET_SHARES_MIN' => '8',
   }
+  File.unlink(config_path)
   success, error = run.call(pool_env)
   raise error unless success
   configured = File.read(config_path)
@@ -58,12 +60,45 @@ Dir.mktmpdir('datum-entrypoint-') do |dir|
     raise "Accepted #{invalid}" if success
     raise 'Invalid input overwrote config' unless File.read(config_path) == configured
   end
+  pool['datum']['pool_host'] = 'web-edited.example'
+  pool['datum']['pool_port'] = 30000
+  pool['datum']['pool_pubkey'] = 'cd' * 64
+  pool['datum']['pool_pass_full_users'] = false
+  pool['datum']['always_pay_self'] = true
+  pool['stratum']['vardiff_min'] = 8192
+  pool['stratum']['vardiff_target_shares_min'] = 12
+  pool['mining']['pool_address'] = 'n2eMqTT929pb1RDNuqEnxdaLau1rxy3efi'
+  pool['mining']['coinbase_tag_secondary'] = 'Web identity'
+  pool['mining']['allow_hasher_time_rolling'] = false
+  pool['bitcoind']['work_update_seconds'] = 40
+  pool['api']['modify_conf'] = false # Upgrade an existing read-only config.
+  File.write(config_path, JSON.generate(pool))
+  success, error = run.call({})
+  raise error unless success
+  saved = JSON.parse(File.read(config_path))
+  raise 'Upgrade did not unlock web editing' unless saved.dig('api', 'modify_conf')
+  %w[datum stratum mining].each do |section|
+    raise "Restart discarded web #{section} settings" unless saved[section] == pool[section]
+  end
+  raise 'Job interval was discarded' unless saved.dig('bitcoind', 'work_update_seconds') == 40
   success, error = run.call(pool_env.merge('DATUM_RPC_COOKIE_FILE' => '/mnt/bitcoin/.cookie'))
   raise error unless success
   cookie = JSON.parse(File.read(config_path))['bitcoind']
   raise 'Cookie auth mapping failed' unless cookie['rpccookiefile'] == '/mnt/bitcoin/.cookie' && !cookie.key?('rpcpassword')
-  success, error = run.call({})
+  success, error = run.call('DATUM_RPC_PASSWORD' => 'rotated-rpc', 'DATUM_DASHBOARD_ADMIN_PASSWORD' => 'rotated-dashboard')
   raise error unless success
-  raise 'Disabling pool failed' unless JSON.parse(File.read(config_path)).dig('datum', 'pool_host') == ''
+  saved = JSON.parse(File.read(config_path))
+  raise 'RPC credentials did not refresh' unless saved.dig('bitcoind', 'rpcpassword') == 'rotated-rpc' && !saved['bitcoind'].key?('rpccookiefile')
+  raise 'Dashboard credentials did not refresh' unless saved.dig('api', 'admin_password') == 'rotated-dashboard'
+  saved['datum']['pool_host(old)'] = saved['datum']['pool_host']
+  saved['datum']['pool_host'] = ''
+  saved['datum']['pooled_mining_only'] = false
+  File.write(config_path, JSON.generate(saved))
+  success, error = run.call(pool_env)
+  raise error unless success
+  raise 'Restart re-enabled the disabled pool' unless JSON.parse(File.read(config_path)).dig('datum', 'pool_host') == ''
+  File.write(config_path, '{broken')
+  success, = run.call({})
+  raise 'Invalid saved JSON was ignored or overwritten' if success || File.read(config_path) != '{broken'
 end
-puts 'Entrypoint: solo, pool, escaping, validation, cookie auth, and mode switching passed'
+puts 'Entrypoint: editable dashboard, persistent settings, validation, and refreshed credentials passed'

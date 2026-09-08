@@ -1,0 +1,64 @@
+diff --git a/src/datum_api.c b/src/datum_api.c
+--- a/src/datum_api.c
++++ b/src/datum_api.c
+@@ -1410,15 +1410,35 @@
+ 		status->need_restart = true;
+ 	} else if (0 == strcmp(key, "datum_pool_pubkey")) {
+ 		if (0 == strcmp(val, datum_config.datum_pool_pubkey)) return true;
+-		if (strlen(val) > 1023) {
+-			json_array_append_new(errors, json_string_nocheck("Pool Pubkey is too long"));
++		if (strlen(val) != 128 || strspn(val, "0123456789abcdefABCDEF") != 128) {
++			json_array_append_new(errors, json_string_nocheck("Pool Pubkey must contain 128 hexadecimal characters"));
+ 			return false;
+ 		}
+ 		strcpy(datum_config.datum_pool_pubkey, val);
+ 		datum_api_json_modify_new("datum", "pool_pubkey", json_string(val));
+ 		// TODO: apply change without restarting
+ 		// TODO: switch pools smoother (keep old connection alive for share submissions until those jobs expire)
++		status->need_restart = true;
++	} else if (0 == strcmp(key, "stratum_vardiff_min")) {
++		const int difficulty = datum_atoi_strict(val, strlen(val));
++		if (difficulty < 1 || difficulty > 1073741824 || (difficulty & (difficulty - 1))) {
++			json_array_append_new(errors, json_string_nocheck("Minimum difficulty must be a power of two between 1 and 1073741824"));
++			return false;
++		}
++		if (difficulty == datum_config.stratum_v1_vardiff_min) return true;
++		datum_config.stratum_v1_vardiff_min = difficulty;
++		datum_api_json_modify_new("stratum", "vardiff_min", json_integer(difficulty));
+ 		status->need_restart = true;
++	} else if (0 == strcmp(key, "stratum_vardiff_target_shares_min")) {
++		const int shares = datum_atoi_strict(val, strlen(val));
++		if (shares < 1 || shares > 120) {
++			json_array_append_new(errors, json_string_nocheck("Target shares per minute must be between 1 and 120"));
++			return false;
++		}
++		if (shares == datum_config.stratum_v1_vardiff_target_shares_min) return true;
++		datum_config.stratum_v1_vardiff_target_shares_min = shares;
++		datum_api_json_modify_new("stratum", "vardiff_target_shares_min", json_integer(shares));
++		status->need_restart = true;
+ 	} else if (0 == strcmp(key, "stratum_fingerprint_miners")) {
+ 		bool val_bool;
+ 		if (!datum_str_to_bool_strict(val, &val_bool)) {
+diff --git a/www/config.html b/www/config.html
+--- a/www/config.html
++++ b/www/config.html
+@@ -174,6 +174,19 @@
+ 		<div class="table-wrapper">
+ 			<div class="table-container">
+ 				<h2>Advanced</h2>
++				<div class="setting-row">
++					<div class="flex-row">
++						<label for="stratum_vardiff_min" class="label">Minimum share difficulty:</label>
++						<input type="number" min="1" max="1073741824" name="stratum_vardiff_min" id="stratum_vardiff_min" value="${stratum_vardiff_min}"${*ro}></input>
++					</div>
++					<label for="stratum_vardiff_min" class="tip">A power of two. Use the minimum required by your pool, for example 4096.</label>
++				</div>
++				<div class="setting-row">
++					<div class="flex-row">
++						<label for="stratum_vardiff_target_shares_min" class="label">Target shares per minute:</label>
++						<input type="number" min="1" max="120" name="stratum_vardiff_target_shares_min" id="stratum_vardiff_target_shares_min" value="${stratum_vardiff_target_shares_min}"${*ro}></input>
++					</div>
++				</div>
+ 				<input type="hidden" name="checkboxes" value="stratum_fingerprint_miners datum_always_pay_self mining_allow_hasher_time_rolling"></input>
+ 				<div class="setting-row">
+ 					<div class="flex-row">

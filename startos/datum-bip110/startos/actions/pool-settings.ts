@@ -1,4 +1,7 @@
-import { miningSettingsFile } from '../file-models/mining-settings.json'
+import {
+  readMiningSettings,
+  saveMiningSettings,
+} from '../file-models/gateway-config.json'
 import { i18n } from '../i18n'
 import { defaultPoolSettings, poolSettingsSchema } from '../pool-settings'
 import { sdk } from '../sdk'
@@ -92,7 +95,7 @@ export const configurePool = sdk.Action.withInput(
   },
   poolInput,
   async () => {
-    const settings = await miningSettingsFile.read((value) => value).once()
+    const settings = await readMiningSettings()
     return settings?.pool ?? defaultPoolSettings
   },
   async ({ effects, input }) => {
@@ -101,7 +104,7 @@ export const configurePool = sdk.Action.withInput(
       host: input.host?.trim() ?? '',
       publicKey: input.publicKey?.trim() ?? '',
     })
-    await miningSettingsFile.merge(effects, { pool })
+    await saveMiningSettings(effects, { pool })
     const status = await sdk.getStatus(effects, { packageId }).once()
     if (status?.desired.main === 'running') await sdk.restart(effects)
   },

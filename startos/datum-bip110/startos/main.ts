@@ -1,3 +1,4 @@
+import { readMiningSettings } from './file-models/gateway-config.json'
 import { manifest as officialBitcoinManifest } from 'bitcoin-knots-startos/startos/manifest'
 import { i18n } from './i18n'
 import { sdk } from './sdk'
@@ -5,7 +6,6 @@ import {
   defaultCoinbaseTagPrimary,
   defaultCoinbaseTagSecondary,
   defaultPayoutAddress,
-  miningSettingsFile,
 } from './file-models/mining-settings.json'
 import { dashboardPasswordFile } from './file-models/dashboard-password'
 import { selectedBitcoinNodeBackend } from './file-models/store.json'
@@ -13,7 +13,7 @@ import { bitcoinNodeConfig, stratumPort } from './utils'
 import { defaultPoolSettings, poolEnvironment } from './pool-settings'
 
 export const main = sdk.setupMain(async ({ effects }) => {
-  const miningSettings = await miningSettingsFile.read((value) => value).once()
+  const miningSettings = await readMiningSettings()
   const dashboardPassword = await dashboardPasswordFile.read().once()
   if (!dashboardPassword) {
     throw new Error('DATUM dashboard password is unavailable')

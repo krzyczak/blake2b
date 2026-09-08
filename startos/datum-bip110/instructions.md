@@ -33,8 +33,8 @@ current Stratum job. The status page refreshes every five seconds and keeps its
 hashrate chart and activity feed only in the current browser tab. It is
 read-only and sends no telemetry. Protected detail pages use HTTP Basic
 authentication; retrieve the generated `admin` credentials from **Actions →
-Dashboard Credentials**. Dashboard configuration editing remains disabled
-because StartOS owns the service configuration.
+Dashboard Credentials**. The **Config** page supports authenticated editing;
+saved mining and pool settings survive gateway and package restarts.
 
 Protected pages use broadly compatible HTTP Basic authentication. Open them
 only through the HTTPS interface published by StartOS; Basic credentials are
@@ -47,18 +47,25 @@ secondary tag to `Totoro`. The gateway restarts and embeds those strings in
 new solo-mined coinbase transactions. This is independent of the Knots
 `blake2b_headline` consensus setting.
 
-Use **Actions → Configure DATUM Pool** to enable pooled mining and enter the
-pool's DATUM hostname, port, and 128-character hexadecimal public key. The
-defaults match port 28915, minimum difficulty 4096, and eight shares per minute.
+To enable pooled mining in the dashboard, open **Config** and set
+**Collaborative reward sharing** to **require (pooled mining only)**.
+Enter the pool's DATUM hostname, port, and 128-character hexadecimal public
+key. Under **Advanced**, set the minimum share difficulty and target shares
+per minute supplied by the pool (for example 4096 and 8).
+Set **Send Miner Usernames To Pool** to **Override Bitcoin Address** for full
+username forwarding, then click **Save**. DATUM restarts when needed.
+**Actions → Configure DATUM Pool** reads and updates the same settings.
 The gateway and pool must use the same BLAKE2b network. Miners continue using
 the gateway's Stratum address; port 28915 is the gateway's outbound DATUM
 connection.
 
-Full username forwarding is enabled by default. Replace `local.worker` in
+When full username forwarding is enabled, replace `local.worker` in
 the example with the payout address or account/worker syntax required by the
 pool. Pool-only mode stops mining during pool outages. Disable that option
 only when solo fallback to the configured payout address is intended.
 Disabling the pool retains its saved settings and returns to solo mining.
+StartOS refreshes node RPC credentials and dashboard access settings during
+package startup; use **Select Bitcoin Node** to change the node connection.
 
 Use **Actions → Set Solo Payout Address** to replace the disposable default
 address with an address whose private key you control. For Testnet4 use a
