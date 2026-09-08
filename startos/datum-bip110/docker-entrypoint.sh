@@ -14,6 +14,46 @@ POOL_ADDRESS="${DATUM_POOL_ADDRESS:-mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn}"
 DASHBOARD_ADMIN_PASSWORD="${DATUM_DASHBOARD_ADMIN_PASSWORD:?DATUM dashboard password is required}"
 HISTORY_SOURCE_NODE="${DATUM_NODE_PACKAGE_ID:-}"
 
+# Validate typed environment values before replacing the working configuration.
+POOL_SETTINGS_JSON="$(jq --null-input --compact-output \
+    --arg host "${DATUM_POOL_HOST:-}" \
+    --arg port "${DATUM_POOL_PORT:-28915}" \
+    --arg key "${DATUM_POOL_PUBKEY:-}" \
+    --arg workers "${DATUM_POOL_PASS_WORKERS:-false}" \
+    --arg users "${DATUM_POOL_PASS_FULL_USERS:-false}" \
+    --arg only "${DATUM_POOLED_MINING_ONLY:-false}" \
+    --arg difficulty "${DATUM_VARDIFF_MIN:-1}" \
+    --arg shares "${DATUM_VARDIFF_TARGET_SHARES_MIN:-8}" '
+  def integer($max):
+    tonumber | if . >= 1 and . <= $max and floor == . then .
+    else error("Pool numeric setting is out of range") end;
+  def boolean:
+    if . == "true" then true elif . == "false" then false
+    else error("Pool boolean setting must be true or false") end;
+  {
+    datum: {
+      pool_host: $host,
+      pool_port: ($port | integer(65535)),
+      pool_pubkey: $key,
+      pool_pass_workers: ($workers | boolean),
+      pool_pass_full_users: ($users | boolean),
+      pooled_mining_only: ($only | boolean)
+    },
+    vardiff_min: ($difficulty | integer(1073741824)),
+    vardiff_target_shares_min: ($shares | integer(120))
+  }
+  | if (.vardiff_min | until(. <= 1; . / 2)) != 1 then
+      error("Minimum difficulty must be a power of two")
+    elif $host != "" and ($key | length != 128 or (test("^[a-fA-F0-9]{128}$") | not)) then
+      error("Pool public key must contain 128 hexadecimal characters")
+    elif $host == "" and .datum.pooled_mining_only then
+      error("Pool mining only requires a pool host")
+    else . end
+')"
+POOL_CONFIG_JSON="$(printf '%s' "$POOL_SETTINGS_JSON" | jq --compact-output '.datum')"
+VARDIFF_MIN="$(printf '%s' "$POOL_SETTINGS_JSON" | jq '.vardiff_min')"
+TARGET_SHARES="$(printf '%s' "$POOL_SETTINGS_JSON" | jq '.vardiff_target_shares_min')"
+
 json_string() {
     jq --null-input --compact-output --arg value "$1" '$value'
 }
@@ -48,8 +88,8 @@ cat > "$DATA_DIR/config.json" <<EOF
   "stratum": {
     "listen_addr": "0.0.0.0",
     "listen_port": 23334,
-    "vardiff_min": 1,
-    "vardiff_target_shares_min": 8,
+    "vardiff_min": ${VARDIFF_MIN},
+    "vardiff_target_shares_min": ${TARGET_SHARES},
     "share_stale_seconds": 120
   },
   "mining": {
@@ -57,7 +97,7 @@ cat > "$DATA_DIR/config.json" <<EOF
     "coinbase_tag_primary": ${COINBASE_TAG_PRIMARY_JSON},
     "coinbase_tag_secondary": ${COINBASE_TAG_SECONDARY_JSON},
     "coinbase_unique_id": 4242,
-    "pow_algorithm": "auto",
+    "abw_verify_all_shares_on_disclosure": true,
     "history_file": "${DATA_DIR}/mining-history.json",
     "history_source_node": ${HISTORY_SOURCE_NODE_JSON}
   },
@@ -74,12 +114,7 @@ cat > "$DATA_DIR/config.json" <<EOF
     "log_to_file": false,
     "log_level_console": 1
   },
-  "datum": {
-    "pool_host": "",
-    "pool_pass_workers": false,
-    "pool_pass_full_users": false,
-    "pooled_mining_only": false
-  }
+  "datum": ${POOL_CONFIG_JSON}
 }
 EOF
 

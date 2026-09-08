@@ -12,21 +12,15 @@ export const manifest = setupManifest({
   license: 'MIT',
   packageRepo: 'https://github.com/krzyczak/blake2b',
   upstreamRepo:
-    'https://github.com/Maveth/datum_gateway/tree/e82d7e5422cb3e425ab7f9d9cbe230b1bc7a2f11',
-  marketingUrl: 'https://github.com/Maveth/datum_gateway/tree/bip110-pow-v2',
+    'https://github.com/Maveth/datum_gateway/tree/7491a5099dd5d887a027c812f71de63e0d5986a3',
+  marketingUrl: 'https://github.com/Maveth/datum_gateway',
   donationUrl: null,
   description: { short, long },
   volumes: ['main', 'startos'],
   images: {
     datum: {
       source: {
-        dockerBuild: {
-          buildArgs: {
-            DATUM_COMMIT: 'e82d7e5422cb3e425ab7f9d9cbe230b1bc7a2f11',
-            DATUM_TARBALL_SHA256:
-              'ed42b3cc8a2e42554c206c7ba8ce06e62adb4c05685c2fc22a2a2b8514d48c2d',
-          },
-        },
+        dockerBuild: {},
       },
       arch: ['x86_64', 'aarch64'],
     },
@@ -37,7 +31,7 @@ export const manifest = setupManifest({
       optional: true,
       metadata: {
         title: 'Bitcoin Blake2b Lab',
-        icon: 'https://raw.githubusercontent.com/Start9Labs/bitcoin-core-startos/51db7e317f48151a75b270dff49039b397048c80/dep-icon.svg',
+        icon: 'dependency-icons/bitcoin.svg',
       },
     },
     bitcoind: {
@@ -45,7 +39,7 @@ export const manifest = setupManifest({
       optional: true,
       metadata: {
         title: 'Bitcoin',
-        icon: 'https://raw.githubusercontent.com/Start9Labs/bitcoin-knots-startos/refs/heads/29.x/dep-icon.svg',
+        icon: 'dependency-icons/bitcoin.svg',
       },
     },
   },

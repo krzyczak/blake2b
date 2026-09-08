@@ -4,7 +4,9 @@
   "scripts": {
     "build": "rm -rf ./javascript && ncc build startos/index.ts -o ./javascript",
     "prettier": "prettier --write startos",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "test:pool": "ncc build tests/pool-settings.ts -o node_modules/.cache/pool-tests && node node_modules/.cache/pool-tests/index.js",
+    "test:manifest": "npm run build && node tests/build-manifest.cjs"
   },
   "dependencies": {
     "@start9labs/start-sdk": "2.0.9",

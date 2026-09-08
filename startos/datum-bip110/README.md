@@ -1,71 +1,112 @@
 # DATUM Blake2b Lab for StartOS
 
-Experimental StartOS wrapper for Maveth's BLAKE2b DATUM Gateway branch, pinned
-to commit `e82d7e5422cb3e425ab7f9d9cbe230b1bc7a2f11` and its verified source
-tarball hash. This branch contains InnerHat's current BLAKE2b implementation
-and adds the test-lab activation-headline and low-height regtest fixes.
+StartOS wrapper for Maveth DATUM Gateway, pinned to
+`7491a5099dd5d887a027c812f71de63e0d5986a3` with a verified source archive
+SHA-256. This revision includes the CONVOY BLAKE2b pool protocol, ABW,
+session resumption, and Maveth's coinbase sigop/weight fixes.
+The source commit and archive checksum are defined in the Dockerfile; the
+StartOS manifest uses those defaults without overriding them.
 
-The service can use either the official Start9 Bitcoin Knots package
-(`bitcoind`) or the companion `bitcoin-bip110` lab package. The **Select
-Bitcoin Node** action changes the active dependency. DATUM resolves the
-selected node's StartOS bridge address at runtime. It authenticates to the
-official package through its read-only RPC cookie and to the lab package with
-its bridge-only RPC credentials. Switching does not move, copy, or delete
-either node's blockchain data.
+**Select Bitcoin Node** chooses the official Start9 `bitcoind` package or
+the companion `bitcoin-bip110` lab package. StartOS resolves the selected
+node's RPC bridge address and uses its read-only cookie or lab credentials.
+The node must supply the `blake2b` GBT rule on the intended network. This
+gateway no longer mines SHA256d templates. Switching nodes does not move or
+delete blockchain data.
 
-DATUM exports Sia-style BLAKE2b Stratum on raw TCP. This revision negotiates
-the RC3 `blake2b` template rule, supports the canonical header-v2 layout,
-copies the activation headline from `getblocktemplate` into the activation
-coinbase, and validates/submits BLAKE2b work. Use the Apple miner's `--sia`
-mode with this package. No remote DATUM pool is configured.
+Miners use Sia-style BLAKE2b Stratum on port 23334. Use the Apple miner's
+`--sia` mode. The gateway connects to the pool through DATUM, not Stratum V1.
 
-Maveth can fetch a DATUM pool public key when an external pool host is enabled.
-This package deliberately leaves the pool host empty, so pool initialization
-returns before that fetch path and mining remains local/solo.
+## Pool settings
 
-The **Set Mining Identity** StartOS action persists validated primary and
-secondary coinbase tags and restarts the gateway. These strings are embedded
-in each solo-mined coinbase. Explorer branding remains registry-based: setting
-a tag makes it visible on-chain, while the public explorer operator must map
-that tag to a display name.
+**Configure DATUM Pool** persists settings in `/data/startos-mining.json`,
+which StartOS backs up with the package volume, and restarts the gateway.
+Existing installations and fresh installs default to solo mining with
+difficulty 1 and eight shares per minute.
 
-The **Set Solo Payout Address** action persists the address used for the
-coinbase transaction output while no upstream DATUM pool is configured. The
-gateway restarts after a change. Use a Bitcoin address appropriate for the
-selected node network whose private key you control. Change it before moving
-between a test network and mainnet.
+To pool mine, enable the pool and enter its DATUM hostname/IP, port, and
+128-character hexadecimal public key. The initial pool defaults are port
+28915, difficulty 4096, eight shares per minute, worker/full-username
+forwarding enabled, and pool-only mining enabled. Host, key, numeric ranges,
+and power-of-two difficulty are validated before saving. Invalid stored pool
+settings cause an error instead of silently enabling solo fallback.
 
-The package exports a live pyblock-inspired monitoring dashboard on port 7152.
-It reads DATUM's in-process gateway, Stratum, share, hashrate, identity, and
-current-job values, refreshes them every five seconds, and keeps a short
-browser-session hashrate chart and activity feed. No external service or
-telemetry is involved. Configuration editing is disabled, and protected detail
-pages use a generated password stored in the backed-up package volume. Retrieve
-it with the **Dashboard Credentials** StartOS action.
+With **Forward Full Usernames** enabled, nonempty miner usernames are sent
+verbatim. Set the payout address or account/worker syntax required by the
+pool on each miner. Leading-dot worker names are appended to the configured
+payout address; empty names use that address. A bare `local.worker` is not
+automatically converted into a payout address.
 
-DATUM calculates the actual difficulty of every locally accepted share. It
-persists the known-history best share, best share since the last accepted
-block, and accepted block records in `/data/mining-history.json`. StartOS backs
-up that file with the package's `main` volume. The history key combines the PoW
-algorithm, node-reported network, and genesis hash. Switching between compatible
-node packages on the same chain keeps the same history; another network or PoW
-uses a separate record.
+**Pool Mining Only** stops mining when the pool is unavailable. Turning it
+off permits solo fallback to the configured solo payout address. Disabling
+the pool restores solo mode while retaining the saved connection settings.
+The pool and selected node must use the same network and BLAKE2b consensus.
 
-The dashboard exposes this data on the Mine page and a separate **Mined
-Blocks** page. `/api/best-shares` returns the persistent summary plus live
-per-client bests. `/api/mined-blocks` returns the active chain's full recorded
-block list. Client bests still reset on reconnect. Mining history is private
-runtime data and is not bundled into the package image.
+The entrypoint regenerates `/data/config.json` from these persisted settings
+on every start. Manual edits to that generated file do not survive restart.
+An explicit pool public key is required; this revision has no key auto-fetch.
 
-The imported `best_since_last_block` is marked incomplete because older DATUM
-versions retained only one process-wide maximum. New record shares improve the
-known lower bound. The field becomes complete when DATUM accepts the next block
-and resets the post-block maximum itself.
+## Local patches
 
-For browser interoperability, protected pages use HTTP Basic authentication
-through the StartOS HTTPS interface. The generated password is long and
-random, configuration editing remains disabled, and the dashboard's internal
-HTTP port should not be exposed directly outside StartOS. Basic credentials
-are only protected in transit by HTTPS, so do not use the internal HTTP port.
+- `browser-auth-compat.patch`: HTTP Basic authentication for protected pages
+  through the StartOS HTTPS interface, including rejection when no admin
+  password is configured.
+- `best-share.patch`: chain-scoped persistent share/block history and API
+  endpoints, including confirmed blocks reconstructed after ABW key disclosure.
+- `configured-payout-address.patch`: preserves the configured address's
+  network prefix in the solo coinbaser display.
+- `lab-compat.patch`: copies activation headlines from GBT `coinbaseaux` into
+  the matching template's coinbase and preserves BIP34 encoding at heights
+  0–16. Optional identity tags yield space to the headline within the 100-byte
+  coinbase input limit. No forced BIP9 bit is added.
 
-Supported StartOS architectures: x86_64 and aarch64.
+The lab patch preserves dummy activation at height 20. The companion node
+boots that chain to height 19 itself. Ordinary regtest without BLAKE2b
+activation cannot supply work to this BLAKE2b-only gateway.
+
+## Identity and monitoring
+
+**Set Mining Identity** persists primary/secondary coinbase tags.
+**Set Solo Payout Address** sets the solo/fallback recipient; replace the
+disposable initial test address with one whose key you control on the selected
+network. Pool coinbases distribute rewards according to the pool's outputs.
+
+The dashboard on port 7152 refreshes gateway, miner, share, and job data every
+five seconds. **Dashboard Credentials** returns the generated password.
+Configuration editing is disabled because StartOS owns configuration. Use
+protected pages through StartOS HTTPS; do not expose the internal HTTP port.
+
+`/data/mining-history.json` stores known-history best work, best work since
+the last recorded block, and accepted block records. The history key contains
+PoW, network, and genesis hash. Compatible node switches retain history;
+different chains use different records. Per-client bests reset on reconnect.
+
+Best work uses the raw work hash. With ABW active, that hash cannot identify
+a network block before key disclosure; the dashboard marks this distinction.
+The submission thread records blocks after the configured node accepts them,
+including ABW reconstructions and already accepted duplicates. It reads
+`getblock` with verbosity 2 for actual block time, height, and total coinbase
+output value. Pooled records have no single payout address, and the dashboard
+labels their reward as shared by the pool. Duplicate submissions do not add
+duplicate records. RPC/read/write failures are logged.
+
+`/api/best-shares` exposes persistent and per-client bests;
+`/api/mined-blocks` exposes the active chain's recorded blocks. Imported
+post-block bests remain marked incomplete until the next recorded block.
+The history records acceptance, not continuing canonical-chain membership.
+
+## Validation
+
+```sh
+npm run check
+npm run test:pool
+npm run test:manifest
+rbenv exec ruby tests/entrypoint.rb
+npm run build
+```
+
+The Docker build runs `datum_gateway --test`, including the protocol/ABW,
+lab coinbase, submission-response, and persistent-history tests. The StartOS
+workflow runs the controller/configuration checks for x86_64 and aarch64
+before building each package. A live connection still requires the actual
+pool endpoint, public key, and miner identity.

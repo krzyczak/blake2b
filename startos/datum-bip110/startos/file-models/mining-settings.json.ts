@@ -1,6 +1,7 @@
 import { FileHelper, z } from '@start9labs/start-sdk'
 import { isValidCoinbaseTag } from '../coinbase-tags'
 import { sdk } from '../sdk'
+import { defaultPoolSettings, poolSettingsSchema } from '../pool-settings'
 
 export const defaultCoinbaseTagPrimary = 'Totoro'
 export const defaultCoinbaseTagSecondary = 'StartOS-BIP110'
@@ -16,10 +17,11 @@ const payoutAddress = z
     /^(?:[123mn2][1-9A-HJ-NP-Za-km-z]{25,34}|(?:bc1|tb1)[023456789ac-hj-np-z]{11,87})$/,
   )
 
-const shape = z.object({
+export const miningSettingsSchema = z.object({
   coinbaseTagPrimary: coinbaseTag.catch(defaultCoinbaseTagPrimary),
   coinbaseTagSecondary: coinbaseTag.catch(defaultCoinbaseTagSecondary),
   payoutAddress: payoutAddress.catch(defaultPayoutAddress),
+  pool: poolSettingsSchema.default(defaultPoolSettings),
 })
 
 export const miningSettingsFile = FileHelper.json(
@@ -27,5 +29,5 @@ export const miningSettingsFile = FileHelper.json(
     base: sdk.volumes.main,
     subpath: '/startos-mining.json',
   },
-  shape,
+  miningSettingsSchema,
 )

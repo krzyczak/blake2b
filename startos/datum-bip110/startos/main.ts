@@ -10,6 +10,7 @@ import {
 import { dashboardPasswordFile } from './file-models/dashboard-password'
 import { selectedBitcoinNodeBackend } from './file-models/store.json'
 import { bitcoinNodeConfig, stratumPort } from './utils'
+import { defaultPoolSettings, poolEnvironment } from './pool-settings'
 
 export const main = sdk.setupMain(async ({ effects }) => {
   const miningSettings = await miningSettingsFile.read((value) => value).once()
@@ -61,6 +62,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
     exec: {
       command: ['/usr/local/bin/datum-bip110-entrypoint', rpcAddress],
       env: {
+        ...poolEnvironment(miningSettings?.pool ?? defaultPoolSettings),
         DATUM_COINBASE_TAG_PRIMARY:
           miningSettings?.coinbaseTagPrimary ?? defaultCoinbaseTagPrimary,
         DATUM_COINBASE_TAG_SECONDARY:

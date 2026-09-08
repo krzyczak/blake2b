@@ -1,0 +1,253 @@
+diff --git a/src/datum_blocktemplates.c b/src/datum_blocktemplates.c
+index c091ac9..07e26ec 100644
+--- a/src/datum_blocktemplates.c
++++ b/src/datum_blocktemplates.c
+@@ -177,7 +177,20 @@ T_DATUM_TEMPLATE_DATA *get_next_template_ptr(void) {
+ 	return p;
+ }
+ 
++bool datum_gbt_parse_headline(json_t *gbt, T_DATUM_TEMPLATE_DATA *tdata) {
++	tdata->blake2b_headline_len = 0;
++	json_t *value = json_object_get(json_object_get(gbt, "coinbaseaux"), "blake2b_headline");
++	if (!value) return true;
++	const char *hex = json_string_value(value);
++	const size_t size = json_string_length(value);
++	if (!hex || size % 2 || size > sizeof(tdata->blake2b_headline) * 2 ||
++	    (size && !datum_pow_decode_hex_exact(hex, size / 2, tdata->blake2b_headline))) return false;
++	tdata->blake2b_headline_len = size / 2;
++	return true;
++}
++
+ T_DATUM_TEMPLATE_DATA *datum_gbt_parser(json_t *gbt) {
++
+ 	T_DATUM_TEMPLATE_DATA *tdata;
+ 	const char *s;
+ 	int i,j;
+@@ -196,6 +209,11 @@ T_DATUM_TEMPLATE_DATA *datum_gbt_parser(json_t *gbt) {
+ 		return NULL;
+ 	}
+ 	
++	if (!datum_gbt_parse_headline(gbt, tdata)) {
++		DLOG_ERROR("Invalid activation headline in GBT coinbaseaux");
++		return NULL;
++	}
++
+ 	tdata->coinbasevalue = json_integer_value(json_object_get(gbt, "coinbasevalue"));
+ 	if (!tdata->coinbasevalue) {
+ 		DLOG_ERROR("Missing data from GBT JSON (coinbasevalue)");
+diff --git a/src/datum_blocktemplates.h b/src/datum_blocktemplates.h
+index 9e0af1b..21a6295 100644
+--- a/src/datum_blocktemplates.h
++++ b/src/datum_blocktemplates.h
+@@ -155,6 +155,8 @@ typedef struct {
+ 	uint16_t	local_index; // tie to stratum work
+ 	uint64_t	generation; // unique identity for this use of the ring slot
+ 	
++	uint8_t blake2b_headline[90];
++	size_t blake2b_headline_len;
+ 	uint64_t	coinbasevalue; //
+ 	uint64_t	mintime; //
+ 	uint64_t	curtime; //
+@@ -198,6 +200,7 @@ extern const char *datum_blocktemplates_error;
+ int datum_template_init(void);
+ bool datum_gbt_rules_want_blake2b(json_t *gbt);
+ T_DATUM_TEMPLATE_DATA *datum_gbt_parser(json_t *gbt);
++bool datum_gbt_parse_headline(json_t *gbt, T_DATUM_TEMPLATE_DATA *tdata);
+ bool datum_blocktemplates_abw_ready(T_DATUM_TEMPLATE_DATA *block_template,
+ 	bool datum_active, bool abw_required);
+ void *datum_gateway_template_thread(void *args);
+diff --git a/src/datum_blocktemplates_tests.c b/src/datum_blocktemplates_tests.c
+index 59566d5..9b5c599 100644
+--- a/src/datum_blocktemplates_tests.c
++++ b/src/datum_blocktemplates_tests.c
+@@ -34,6 +34,7 @@
+  */
+ 
+ #include <jansson.h>
++#include <string.h>
+ 
+ #include "datum_blocktemplates.h"
+ #include "datum_utils.h"
+@@ -89,7 +90,25 @@ static void datum_blocktemplates_abw_mode_tests(void) {
+ 		&block_template, true, true));
+ }
+ 
++static void datum_lab_headline_tests(void) {
++	T_DATUM_TEMPLATE_DATA template = {0};
++	json_t *gbt = json_pack("{s:{s:s}}", "coinbaseaux", "blake2b_headline", "4249503131302d4c4142");
++	datum_test(datum_gbt_parse_headline(gbt, &template));
++	datum_test(template.blake2b_headline_len == 10);
++	datum_test(!memcmp(template.blake2b_headline, "BIP110-LAB", 10));
++	json_object_set_new(json_object_get(gbt, "coinbaseaux"), "blake2b_headline", json_string("zz"));
++	datum_test(!datum_gbt_parse_headline(gbt, &template));
++	json_object_set_new(json_object_get(gbt, "coinbaseaux"), "blake2b_headline", json_string("f"));
++	datum_test(!datum_gbt_parse_headline(gbt, &template));
++	json_object_del(gbt, "coinbaseaux");
++	datum_test(datum_gbt_parse_headline(gbt, &template));
++	datum_test(template.blake2b_headline_len == 0);
++	json_decref(gbt);
++}
++
+ void datum_blocktemplates_tests(void) {
++	datum_lab_headline_tests();
++
+ 	datum_gbt_rules_blake2b_tests();
+ 	datum_blocktemplates_abw_mode_tests();
+ }
+diff --git a/src/datum_coinbaser.c b/src/datum_coinbaser.c
+index e424fa0..9c79f9d 100644
+--- a/src/datum_coinbaser.c
++++ b/src/datum_coinbaser.c
+@@ -59,16 +59,22 @@ CURL *coinbaser_curl = NULL;
+ 
+ const char *cbstart_hex = "01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff"; // 82 len hex, 41 bytes
+ 
+-int generate_coinbase_input(int height, char *cb, int *target_pot_index) {
++int generate_coinbase_input_with_headline(int height, char *cb, int *target_pot_index,
++	const unsigned char *headline, size_t headline_len) {
+ 	int cb_input_sz = 0;
+ 	int tag_len[2] = { 0, 0 };
+ 	int k, m, i;
+ 	int excess;
+ 	bool datum_active = false;
+ 	
+-	// let's figure out our coinbase tags w/BIP34 height
+-	i = append_UNum_hex(height, &cb[0]);
+-	cb_input_sz += i>>1;
++// BIP34 uses OP_0/OP_1..OP_16 at low regtest heights.
++if (height >= 0 && height <= 16) {
++	uchar_to_hex(cb, height ? 0x50 + height : 0);
++	i = 2;
++} else {
++	i = append_UNum_hex(height, cb);
++}
++cb_input_sz = i >> 1;
+ 	
+ 	datum_active = datum_protocol_is_active();
+ 	
+@@ -82,7 +88,20 @@ int generate_coinbase_input(int height, char *cb, int *target_pot_index) {
+ 		tag_len[0] = strlen(datum_config.override_mining_coinbase_tag_primary);
+ 	}
+ 	tag_len[1] = strlen(datum_config.mining_coinbase_tag_secondary);
+-	k = tag_len[0] + tag_len[1] + 2;
++if (headline_len) {
++	if (!headline || headline_len > 90) return -1;
++	const int uid_size = datum_active || datum_config.prime_id ? 12 : 4;
++	const int headline_size = (int)headline_len + (headline_len > 75 ? 2 : 1);
++	// Reserve the consensus headline before fitting optional identity tags.
++	const int tag_budget = 100 - cb_input_sz - uid_size - headline_size - 2;
++	if (tag_budget < 0) return -1;
++	while (tag_len[0] + tag_len[1] + (tag_len[1] ? 1 : 0) > tag_budget) {
++		if (tag_len[1]) tag_len[1]--;
++		else if (!datum_active && tag_len[0]) tag_len[0]--;
++		else return -1; // Never truncate a pool's required primary tag.
++	}
++}
++k = tag_len[0] + tag_len[1] + 2;
+ 	if (!tag_len[1]) {
+ 		k--;
+ 		if (!tag_len[0]) {
+@@ -181,9 +200,22 @@ int generate_coinbase_input(int height, char *cb, int *target_pot_index) {
+ 		uchar_to_hex(&cb[i], ((datum_config.prime_id>>56)&0xFF)); i+=2; cb_input_sz++;
+ 	}
+ 	
++	if (headline_len) {
++		if (headline_len > 75) {
++			uchar_to_hex(cb + i, 0x4c); i += 2; cb_input_sz++;
++		}
++		uchar_to_hex(cb + i, (unsigned char)headline_len); i += 2; cb_input_sz++;
++		for (size_t n = 0; n < headline_len; ++n) {
++			uchar_to_hex(cb + i, headline[n]); i += 2; cb_input_sz++;
++		}
++	}
+ 	return cb_input_sz;
+ }
+ 
++int generate_coinbase_input(int height, char *cb, int *target_pot_index) {
++	return generate_coinbase_input_with_headline(height, cb, target_pot_index, NULL, 0);
++}
++
+ void generate_coinbase_txns_for_stratum_job_subtypebysize(T_DATUM_STRATUM_JOB *s, int coinbase_index, int remaining_size, bool space_for_en_in_coinbase, int *cb1idx, int *cb2idx, bool special_coinb1) {
+ 	// This function finishes off the stratum coinb1+coinb2 using the available outputs in the job and other flags specified.
+ 	// it does not attempt to maximize coinb1's size to any specific size
+@@ -391,7 +423,13 @@ void generate_base_coinbase_txns_for_stratum_job(T_DATUM_STRATUM_JOB *s, bool ne
+ 	memcpy(&s->coinbase[0].coinb1[0], cbstart_hex, j);
+ 	cb1idx[0] = j;
+ 	
+-	cb_input_sz = generate_coinbase_input(s->height, &cb[0], &target_pot_index);
++	cb_input_sz = generate_coinbase_input_with_headline(s->height, cb, &target_pot_index,
++		s->block_template->blake2b_headline, s->block_template->blake2b_headline_len);
++	if (cb_input_sz < 0) {
++		DLOG_FATAL("Activation headline and required pool tag cannot fit in the coinbase input");
++		panic_from_thread(__LINE__);
++		return;
++	}
+ 	i = cb_input_sz << 1;
+ 	
+ 	// null terminate... probably not needed
+@@ -570,7 +608,13 @@ void generate_coinbase_txns_for_stratum_job(T_DATUM_STRATUM_JOB *s, bool empty_o
+ 		cb1idx[i] = j;
+ 	}
+ 	
+-	cb_input_sz = generate_coinbase_input(s->height, &cb[0], &target_pot_index);
++	cb_input_sz = generate_coinbase_input_with_headline(s->height, cb, &target_pot_index,
++		s->block_template->blake2b_headline, s->block_template->blake2b_headline_len);
++	if (cb_input_sz < 0) {
++		DLOG_FATAL("Activation headline and required pool tag cannot fit in the coinbase input");
++		panic_from_thread(__LINE__);
++		return;
++	}
+ 	s->target_pot_index = target_pot_index;
+ 	i = cb_input_sz << 1;
+ 	
+diff --git a/src/datum_coinbaser.h b/src/datum_coinbaser.h
+index ad38683..9953b41 100644
+--- a/src/datum_coinbaser.h
++++ b/src/datum_coinbaser.h
+@@ -42,6 +42,8 @@ typedef struct T_DATUM_STRATUM_JOB T_DATUM_STRATUM_JOB;
+ 
+ int datum_coinbaser_init(void);
+ int generate_coinbase_input(int height, char *cb, int *target_pot_index);
++int generate_coinbase_input_with_headline(int height, char *cb, int *target_pot_index,
++	const unsigned char *headline, size_t headline_len);
+ void generate_coinbase_txns_for_stratum_job_subtypebysize(T_DATUM_STRATUM_JOB *s, int coinbase_index, int remaining_size, bool space_for_en_in_coinbase, int *cb1idx, int *cb2idx, bool special_coinb1);
+ void generate_coinbase_txns_for_stratum_job(T_DATUM_STRATUM_JOB *s, bool empty_only);
+ void generate_base_coinbase_txns_for_stratum_job(T_DATUM_STRATUM_JOB *s, bool new_block);
+diff --git a/src/datum_coinbaser_tests.c b/src/datum_coinbaser_tests.c
+index 46657e0..97a9101 100644
+--- a/src/datum_coinbaser_tests.c
++++ b/src/datum_coinbaser_tests.c
+@@ -156,7 +156,33 @@ static void datum_blake2b_coinbase_sigops_tests(void) {
+ 	free(job);
+ }
+ 
++static void datum_lab_coinbase_tests(void) {
++	char cb[2048] = {0};
++	int pot;
++	const uint64_t saved_prime_id = datum_config.prime_id;
++	datum_config.prime_id = 0;
++	for (int height = 0; height <= 16; ++height) {
++		datum_test(generate_coinbase_input(height, cb, &pot) > 0);
++		datum_test(hex2bin_uchar(cb) == (height ? 0x50 + height : 0));
++	}
++	const unsigned char headline[] = "BIP110-LAB";
++	int len = generate_coinbase_input_with_headline(20, cb, &pot, headline, sizeof(headline) - 1);
++	datum_test(len > 0 && len <= 100);
++	datum_test(!memcmp(cb + (len - 11) * 2, "0a4249503131302d4c4142", 22));
++	datum_test(hex2bin_uchar(cb + pot * 2) == 0xff);
++	unsigned char longest[90];
++	memset(longest, 'X', sizeof(longest));
++	len = generate_coinbase_input_with_headline(20, cb, &pot, longest, sizeof(longest));
++	datum_test(len == 100);
++	datum_test(!memcmp(cb + 16, "4c5a", 4));
++	datum_test(generate_coinbase_input_with_headline(20, cb, &pot, longest, 91) == -1);
++	datum_test(generate_coinbase_input_with_headline(20, cb, &pot, NULL, 1) == -1);
++	datum_config.prime_id = saved_prime_id;
++}
++
+ void datum_coinbaser_tests(void) {
++	datum_lab_coinbase_tests();
++
+ 	datum_prime_id_64bit_tests();
+ 	datum_blake2b_coinbase_limit_tests();
+ 	datum_blake2b_coinbase_sigops_tests();

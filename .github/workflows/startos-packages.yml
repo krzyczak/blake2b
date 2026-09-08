@@ -114,6 +114,14 @@ jobs:
         working-directory: startos/${{ matrix.package }}
         run: npm run check
 
+      - name: Test DATUM configuration and build manifest
+        if: matrix.package == 'datum-bip110'
+        working-directory: startos/datum-bip110
+        run: |
+          npm run test:pool
+          ruby tests/entrypoint.rb
+          npm run test:manifest
+
       - name: Build the installable package
         working-directory: startos/${{ matrix.package }}
         env:

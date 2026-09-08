@@ -1,7 +1,11 @@
 diff --git a/src/datum_api.c b/src/datum_api.c
+index 7982553..a01022a 100644
 --- a/src/datum_api.c
 +++ b/src/datum_api.c
-@@ -471,11 +471,0 @@
+@@ -555,42 +555,29 @@ bool datum_api_check_admin_password_only(struct MHD_Connection * const connectio
+ 	return false;
+ }
+ 
 -static enum MHD_DigestAuthAlgorithm datum_api_pick_digest_algo(struct MHD_Connection * const connection) {
 -	const char *ua = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "User-Agent");
 -	if (!ua) ua = "";
@@ -13,16 +17,18 @@ diff --git a/src/datum_api.c b/src/datum_api.c
 -	return MHD_DIGEST_ALG_SHA256;
 -}
 -
-@@ -484 +473 @@
+ bool datum_api_check_admin_password_httponly(struct MHD_Connection * const connection, const create_response_func_t auth_failure_response_creator) {
+ 	int ret;
 -	static bool safari_warned = false;
 +	static bool basic_auth_warned = false;
-@@ -486,23 +475,22 @@
+ 	
 -	char * const username = MHD_digest_auth_get_username(connection);
 -	const enum MHD_DigestAuthAlgorithm algo = datum_api_pick_digest_algo(connection);
--	const char * const realm = "DATUM Gateway";
+ 	const char * const realm = "DATUM Gateway";
 -	if (username) {
 -		ret = MHD_digest_auth_check2(connection, realm, username, datum_config.api_admin_password, 300, algo);
 -		free(username);
+-		if (ret == MHD_YES && !datum_config.api_admin_password_len) ret = MHD_NO;
 -	} else {
 -		ret = MHD_NO;
 -	}
@@ -35,12 +41,6 @@ diff --git a/src/datum_api.c b/src/datum_api.c
 -		if (username && !nonce_is_stale) {
 -			DLOG_DEBUG("Wrong password in HTTP authentication");
 -		}
--		struct MHD_Response * const response = auth_failure_response_creator();
--		ret = MHD_queue_auth_fail_response2(connection, realm, "x", response, nonce_is_stale ? MHD_YES : MHD_NO, algo);
--		MHD_destroy_response(response);
--		return false;
--	}
-+	const char * const realm = "DATUM Gateway";
 +	char *password = NULL;
 +	char * const username = MHD_basic_auth_get_username_password(connection, &password);
 +	const bool valid = username && password && !strcmp(username, "admin") &&
@@ -57,8 +57,9 @@ diff --git a/src/datum_api.c b/src/datum_api.c
 +	if (username) MHD_free(username);
 +	if (password) MHD_free(password);
 +	if (!valid) {
-+		struct MHD_Response * const response = auth_failure_response_creator();
+ 		struct MHD_Response * const response = auth_failure_response_creator();
+-		ret = MHD_queue_auth_fail_response2(connection, realm, "x", response, nonce_is_stale ? MHD_YES : MHD_NO, algo);
 +		ret = MHD_queue_basic_auth_fail_response(connection, realm, response);
-+		MHD_destroy_response(response);
-+		return false;
-+	}
+ 		MHD_destroy_response(response);
+ 		return false;
+ 	}

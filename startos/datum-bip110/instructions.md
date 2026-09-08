@@ -47,6 +47,19 @@ secondary tag to `Totoro`. The gateway restarts and embeds those strings in
 new solo-mined coinbase transactions. This is independent of the Knots
 `blake2b_headline` consensus setting.
 
+Use **Actions → Configure DATUM Pool** to enable pooled mining and enter the
+pool's DATUM hostname, port, and 128-character hexadecimal public key. The
+defaults match port 28915, minimum difficulty 4096, and eight shares per minute.
+The gateway and pool must use the same BLAKE2b network. Miners continue using
+the gateway's Stratum address; port 28915 is the gateway's outbound DATUM
+connection.
+
+Full username forwarding is enabled by default. Replace `local.worker` in
+the example with the payout address or account/worker syntax required by the
+pool. Pool-only mode stops mining during pool outages. Disable that option
+only when solo fallback to the configured payout address is intended.
+Disabling the pool retains its saved settings and returns to solo mining.
+
 Use **Actions → Set Solo Payout Address** to replace the disposable default
 address with an address whose private key you control. For Testnet4 use a
 Testnet address, normally beginning with `m`, `n`, `2`, or `tb1`. This Maveth
@@ -59,8 +72,8 @@ coinbase immediately, but a public site will show your chosen display name and
 pickaxe only after its operator adds a matching registry entry. Ask the
 mempool.guide operator to map your exact unique tag to your desired name.
 
-The gateway uses minimum share difficulty 1, automatically follows the node's
-`!blake2b` template rule, and disables connection to an external DATUM pool.
+The gateway defaults to solo mining with minimum share difficulty 1 and
+requires the node's `blake2b` template rule. SHA256d templates are unsupported.
 Its initial payout address is disposable and must be replaced to control mined
 rewards. Its default tags are `Totoro` and `StartOS-BIP110`. In dummy mode, a
 submitted height-20 block belongs to the private regtest chain.
@@ -71,3 +84,9 @@ this package and test coins have no monetary value.
 `--datum` is retained in the Apple miner for Maveth's opt-in lab-mid dialect.
 The gateway sends canonical Sia-style jobs by default, so use `--sia` with
 this StartOS package.
+
+Pooled block rewards shown in the dashboard are the total block reward shared
+by the pool, not an individual miner's payout. With anti-block-withholding
+active, best shares measure raw work; block results are known after the pool
+discloses its key. Accepted reconstructed blocks enter the same persistent
+Mined Blocks history as solo blocks.

@@ -1,7 +1,7 @@
 FROM debian:bookworm-slim AS builder
 
-ARG DATUM_COMMIT=e82d7e5422cb3e425ab7f9d9cbe230b1bc7a2f11
-ARG DATUM_TARBALL_SHA256=ed42b3cc8a2e42554c206c7ba8ce06e62adb4c05685c2fc22a2a2b8514d48c2d
+ARG DATUM_COMMIT=7491a5099dd5d887a027c812f71de63e0d5986a3
+ARG DATUM_TARBALL_SHA256=453b8dfc06f805b275eb99e745cb9df23ac6ff9a3b9e76a41926169f129b8b9d
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
@@ -28,16 +28,19 @@ RUN curl --fail --location --silent --show-error \
 COPY browser-auth-compat.patch /tmp/browser-auth-compat.patch
 COPY best-share.patch /tmp/best-share.patch
 COPY configured-payout-address.patch /tmp/configured-payout-address.patch
+COPY lab-compat.patch /tmp/lab-compat.patch
 COPY dashboard/home.html /src/www/home.html
 
-RUN patch --directory=/src --strip=1 --input=/tmp/browser-auth-compat.patch \
-    && patch --directory=/src --strip=1 --input=/tmp/best-share.patch \
-    && patch --directory=/src --strip=1 --input=/tmp/configured-payout-address.patch \
+RUN patch --fuzz=0 --directory=/src --strip=1 --input=/tmp/browser-auth-compat.patch \
+    && patch --fuzz=0 --directory=/src --strip=1 --input=/tmp/best-share.patch \
+    && patch --fuzz=0 --directory=/src --strip=1 --input=/tmp/configured-payout-address.patch \
+    && patch --fuzz=0 --directory=/src --strip=1 --input=/tmp/lab-compat.patch \
     && rm /tmp/browser-auth-compat.patch /tmp/best-share.patch \
-        /tmp/configured-payout-address.patch
+        /tmp/configured-payout-address.patch /tmp/lab-compat.patch
 
 RUN cmake -S /src -B /build -DCMAKE_BUILD_TYPE=Release \
-    && cmake --build /build --parallel
+    && cmake --build /build --parallel \
+    && /build/datum_gateway --test
 
 FROM debian:bookworm-slim
 
