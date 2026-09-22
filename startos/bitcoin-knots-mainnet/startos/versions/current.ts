@@ -76,7 +76,7 @@ const setConsensusRules = {
 /**
  * Flavor-only keys must be removed before handoff. Leaving `maxtipage` behind
  * would make a node on the other chain call itself synced up to two weeks late.
- * RC4's headline is also removed because Knots 29.4.1 no longer uses it on
+ * RC4's headline is also removed because Knots 29.4.2 no longer uses it on
  * mainnet and sibling binaries may reject it.
  */
 const clearFlavorKeys = {
@@ -88,30 +88,31 @@ const clearFlavorKeys = {
 }
 
 export const current = VersionInfo.of({
-  version: '#knots:29.4:13',
+  version: '#knots:29.4:14',
   releaseNotes: {
-    en_US: `- Update Bitcoin Knots to v29.4.1.knots20260508.
-- Improve NODE_BLAKE2B peer discovery and outbound selection.
-- Update mainnet assumevalid and minimum chain work.`,
-    es_ES: `- Actualiza Bitcoin Knots a v29.4.1.knots20260508.
-- Mejora el descubrimiento y la selección de pares salientes NODE_BLAKE2B.
-- Actualiza assumevalid y el trabajo mínimo de cadena de mainnet.`,
-    de_DE: `- Aktualisiert Bitcoin Knots auf v29.4.1.knots20260508.
-- Verbessert die Erkennung und Auswahl ausgehender NODE_BLAKE2B-Peers.
-- Aktualisiert AssumeValid und die Mindest-Chainwork des Mainnets.`,
-    pl_PL: `- Aktualizuje Bitcoin Knots do v29.4.1.knots20260508.
-- Usprawnia wykrywanie i wybór wychodzących peerów NODE_BLAKE2B.
-- Aktualizuje assumevalid i minimalny chain work sieci mainnet.`,
-    fr_FR: `- Met à jour Bitcoin Knots vers v29.4.1.knots20260508.
-- Améliore la découverte et la sélection sortante des pairs NODE_BLAKE2B.
-- Met à jour assumevalid et le travail de chaîne minimal du réseau principal.`,
+    en_US: `- Update Bitcoin Knots to v29.4.2.knots20260508.
+- Enforce the temporary 6,480-block coinbase maturity from height 973,440 through 979,919.
+- Revalidate the affected chain range on upgrade.
+- Report BLAKE2b difficulty separately from SHA256d difficulty.`,
+    es_ES: `- Actualiza Bitcoin Knots a v29.4.2.knots20260508.
+- Aplica temporalmente una madurez de coinbase de 6.480 bloques desde la altura 973.440 hasta la 979.919.
+- Revalida el rango afectado de la cadena durante la actualización.
+- Informa la dificultad BLAKE2b por separado de la dificultad SHA256d.`,
+    de_DE: `- Aktualisiert Bitcoin Knots auf v29.4.2.knots20260508.
+- Erzwingt vorübergehend eine Coinbase-Reifezeit von 6.480 Blöcken von Höhe 973.440 bis 979.919.
+- Validiert beim Upgrade den betroffenen Kettenbereich erneut.
+- Meldet die BLAKE2b-Difficulty getrennt von der SHA256d-Difficulty.`,
+    pl_PL: `- Aktualizuje Bitcoin Knots do v29.4.2.knots20260508.
+- Tymczasowo wymusza dojrzewanie coinbase przez 6 480 bloków od wysokości 973 440 do 979 919.
+- Ponownie weryfikuje objęty zmianą zakres łańcucha podczas aktualizacji.
+- Raportuje trudność BLAKE2b oddzielnie od trudności SHA256d.`,
+    fr_FR: `- Met à jour Bitcoin Knots vers v29.4.2.knots20260508.
+- Impose temporairement une maturité coinbase de 6 480 blocs de la hauteur 973 440 à 979 919.
+- Revalide la plage de chaîne concernée lors de la mise à niveau.
+- Signale séparément la difficulté BLAKE2b et la difficulté SHA256d.`,
   },
   migrations: {
-    up: async ({ effects }) => {
-      await bitcoinConfFile.merge(effects, {
-        raw: { blake2b_headline: undefined },
-      })
-    },
+    up: async () => {},
     down: IMPOSSIBLE,
     // Keyed by Core major series as caret ranges — one entry per Core
     // major, not per Core `:N`. Range-keyed `migrations.other` requires

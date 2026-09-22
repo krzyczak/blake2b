@@ -1,6 +1,6 @@
 # Updating the upstream version
 
-The `bitcoind` image is built locally from `Dockerfile`: it downloads the Knots release tarball from `${RELEASE_BASE_URL}` and verifies `SHA256SUMS.asc` against the pinned signer quorum (keys in `assets/release-keys/`, fingerprints in `PINNED_FINGERPRINTS`). There is no `dockerTag`; `VERSION` and `RELEASE_BASE_URL` live in manifest `buildArgs`. This private branch currently pins the signed final release from `bitcoinknots.org`.
+The `bitcoind` image is built locally from `Dockerfile`: it downloads the Knots release tarball from `${RELEASE_BASE_URL}` and verifies `SHA256SUMS.asc` against the pinned signer quorum (keys in `assets/release-keys/`, fingerprints in `PINNED_FINGERPRINTS`). There is no `dockerTag`; `VERSION` and `RELEASE_BASE_URL` live in manifest `buildArgs`. This private branch currently pins the signed `29.4.2.knots20260508` release from `bitcoinknots.org`.
 
 ## Determining the upstream version
 

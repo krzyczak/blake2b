@@ -407,7 +407,7 @@ export default {
     2914: 'Por defecto',
     3000: 'Confirmo',
     3002: 'Adhesión a la cadena RDTS',
-    3004: 'El Reduced Data Temporary Softfork («RDTS») de BIP-110 se separó de la cadena seguida por Bitcoin Core en el bloque 961.632. Este paquete sigue esa cadena independiente. Bitcoin Knots v29.4.1.knots20260508 cambia su prueba de trabajo a BLAKE2b con cabecera v2 desde el bloque 961.640 y exige el titular de consenso «8-30 NYPost Deride And Conquer». Actualizar un nodo RDTS existente puede causar una reorganización profunda que descarte los bloques SHA256d posteriores al 961.639. Las dos cadenas no tienen protección contra repetición.',
+    3004: 'El Reduced Data Temporary Softfork («RDTS») de BIP-110 se separó de la cadena seguida por Bitcoin Core en el bloque 961.632. Este paquete sigue esa cadena independiente. Bitcoin Knots v29.4.2.knots20260508 cambia su prueba de trabajo a BLAKE2b con cabecera v2 desde el bloque 961.640 y exige el titular de consenso «8-30 NYPost Deride And Conquer». Desde el bloque 973.440 hasta el 979.919 aplica temporalmente una madurez de 6.480 bloques a las recompensas coinbase creadas desde el bloque 973.440. Actualizar un nodo RDTS existente puede causar una reorganización profunda que descarte los bloques SHA256d posteriores al 961.639 o los bloques que gastaron una de esas recompensas demasiado pronto. Las dos cadenas no tienen protección contra repetición.',
     3005: 'Por favor, confirme',
     3007: 'Confirma que esta versión sigue la cadena RDTS independiente y usa prueba de trabajo BLAKE2b con cabecera v2 desde el bloque 961.640.',
 
@@ -839,7 +839,7 @@ export default {
     2914: 'Standard',
     3000: 'Ich bestätige',
     3002: 'Beitritt zur RDTS-Kette',
-    3004: 'Der BIP-110 Reduced Data Temporary Softfork („RDTS“) trennte sich bei Block 961.632 von der von Bitcoin Core gefolgten Kette. Dieses Paket folgt dieser separaten Kette. Bitcoin Knots v29.4.1.knots20260508 wechselt ab Block 961.640 auf BLAKE2b-Proof-of-Work mit Header v2 und verlangt die Konsens-Schlagzeile „8-30 NYPost Deride And Conquer“. Das Upgrade eines bestehenden RDTS-Knotens kann eine tiefe Reorganisation weg von SHA256d-Blöcken nach 961.639 auslösen. Die Ketten haben keinen Replay-Schutz.',
+    3004: 'Der BIP-110 Reduced Data Temporary Softfork („RDTS“) trennte sich bei Block 961.632 von der von Bitcoin Core gefolgten Kette. Dieses Paket folgt dieser separaten Kette. Bitcoin Knots v29.4.2.knots20260508 wechselt ab Block 961.640 auf BLAKE2b-Proof-of-Work mit Header v2 und verlangt die Konsens-Schlagzeile „8-30 NYPost Deride And Conquer“. Von Block 973.440 bis 979.919 erzwingt es vorübergehend eine Coinbase-Reifezeit von 6.480 Blöcken für Belohnungen, die ab Block 973.440 erzeugt wurden. Das Upgrade eines bestehenden RDTS-Knotens kann eine tiefe Reorganisation weg von SHA256d-Blöcken nach 961.639 oder von Blöcken auslösen, die eine solche Belohnung zu früh ausgaben. Die Ketten haben keinen Replay-Schutz.',
     3005: 'Bitte bestätigen',
     3007: 'Bestätige, dass diese Version der separaten RDTS-Kette folgt und ab Block 961.640 BLAKE2b-Proof-of-Work mit Header v2 verwendet.',
 
@@ -1271,7 +1271,7 @@ export default {
     2914: 'Domyślnie',
     3000: 'Potwierdzam',
     3002: 'Przystąpienie do łańcucha RDTS',
-    3004: 'Reduced Data Temporary Softfork („RDTS”) z BIP-110 oddzielił się od łańcucha śledzonego przez Bitcoin Core na bloku 961 632. Ten pakiet śledzi ten osobny łańcuch. Bitcoin Knots v29.4.1.knots20260508 od bloku 961 640 zmienia proof of work na BLAKE2b z nagłówkiem v2 i wymaga nagłówka konsensusu „8-30 NYPost Deride And Conquer”. Aktualizacja istniejącego węzła RDTS może spowodować głęboką reorganizację z bloków SHA256d po 961 639. Łańcuchy nie mają ochrony przed powtórzeniem.',
+    3004: 'Reduced Data Temporary Softfork („RDTS”) z BIP-110 oddzielił się od łańcucha śledzonego przez Bitcoin Core na bloku 961 632. Ten pakiet śledzi ten osobny łańcuch. Bitcoin Knots v29.4.2.knots20260508 od bloku 961 640 zmienia proof of work na BLAKE2b z nagłówkiem v2 i wymaga nagłówka konsensusu „8-30 NYPost Deride And Conquer”. Od bloku 973 440 do 979 919 tymczasowo wymusza dojrzewanie przez 6 480 bloków dla nagród coinbase utworzonych od bloku 973 440. Aktualizacja istniejącego węzła RDTS może spowodować głęboką reorganizację z bloków SHA256d po 961 639 lub bloków, które wydały taką nagrodę zbyt wcześnie. Łańcuchy nie mają ochrony przed powtórzeniem.',
     3005: 'Proszę potwierdzić',
     3007: 'Potwierdź, że ta wersja śledzi osobny łańcuch RDTS i od bloku 961 640 używa proof of work BLAKE2b z nagłówkiem v2.',
 
@@ -1703,7 +1703,7 @@ export default {
     2914: 'Par défaut',
     3000: 'Je confirme',
     3002: 'Adhésion à la chaîne RDTS',
-    3004: "Le Reduced Data Temporary Softfork (« RDTS ») de BIP-110 s'est séparé de la chaîne suivie par Bitcoin Core au bloc 961 632. Ce paquet suit cette chaîne distincte. Bitcoin Knots v29.4.1.knots20260508 passe à la preuve de travail BLAKE2b avec en-tête v2 au bloc 961 640 et exige le titre de consensus « 8-30 NYPost Deride And Conquer ». La mise à niveau d'un nœud RDTS existant peut provoquer une réorganisation profonde abandonnant les blocs SHA256d après 961 639. Les chaînes n'ont aucune protection contre le rejeu.",
+    3004: "Le Reduced Data Temporary Softfork (« RDTS ») de BIP-110 s'est séparé de la chaîne suivie par Bitcoin Core au bloc 961 632. Ce paquet suit cette chaîne distincte. Bitcoin Knots v29.4.2.knots20260508 passe à la preuve de travail BLAKE2b avec en-tête v2 au bloc 961 640 et exige le titre de consensus « 8-30 NYPost Deride And Conquer ». Du bloc 973 440 au bloc 979 919, il impose temporairement une maturité de 6 480 blocs aux récompenses coinbase créées à partir du bloc 973 440. La mise à niveau d'un nœud RDTS existant peut provoquer une réorganisation profonde abandonnant les blocs SHA256d après 961 639 ou les blocs ayant dépensé trop tôt une telle récompense. Les chaînes n'ont aucune protection contre le rejeu.",
     3005: 'Veuillez confirmer',
     3007: 'Confirmez que cette version suit la chaîne RDTS distincte et utilise la preuve de travail BLAKE2b avec en-tête v2 à partir du bloc 961 640.',
 

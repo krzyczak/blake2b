@@ -27,6 +27,8 @@ Bitcoin Knots starts and begins Initial Block Download (IBD) immediately on inst
 
 > The first enforcing-package start can deeply reorganize an existing node away from SHA256d blocks after 961,639. Keep the service running until **Blockchain Sync** reports fully synced.
 
+> Knots 29.4.2 also enforces a temporary 6,480-block maturity for coinbase rewards created at or after height 973,440. The consensus window runs through height 979,919. This upgrade revalidates that range and can reorganize away from blocks that spent one of those rewards too early.
+
 ## Using Bitcoin Knots
 
 ### RPC
@@ -40,7 +42,7 @@ Four configuration actions cover the full set of editable `bitcoin.conf` values,
 - **Mempool Settings** — Knots' policy controls (OP_RETURN limits, parasite/token filters, replacement rules, ancestor/descendant limits, dust relay fee, etc.) plus standard mempool sizing.
 - **Peer Settings** — `onlynet`, BIP324 v2 transport, I2P SAM proxy on/off, manual peers, max connections.
 - **RPC Settings** — RPC threads, work queue, server timeout.
-- **Other Settings** — ZMQ, txindex, block templates, coinstats index, block filters (BIP158/157), pruning, dbcache, wallet master switches, NAT-PMP, and max upload target. Knots 29.4.1 hardcodes the mainnet BLAKE2b activation headline as `8-30 NYPost Deride And Conquer`; it is no longer a package setting.
+- **Other Settings** — ZMQ, txindex, block templates, coinstats index, block filters (BIP158/157), pruning, dbcache, wallet master switches, NAT-PMP, and max upload target. Knots 29.4.2 hardcodes the mainnet BLAKE2b activation headline as `8-30 NYPost Deride And Conquer`; it is no longer a package setting.
 
 Turning on txindex, the coinstats index, or block filters after the chain is already synced starts a rebuild from the first block. The **Index Sync** health check on the Dashboard tracks it, and anything relying on that index — transaction lookups, filter-based wallet scans — stays incomplete until it finishes, even though the node itself reports fully synced.
 

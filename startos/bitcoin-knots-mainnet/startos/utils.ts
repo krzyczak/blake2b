@@ -75,7 +75,8 @@ export type GetBlockchainInfo = {
   blocks: number
   headers: number
   bestblockhash: string
-  difficulty: number
+  difficulty?: number
+  difficulty_blake2b?: number
   mediantime: number
   verificationprogress: number
   initialblockdownload: boolean
