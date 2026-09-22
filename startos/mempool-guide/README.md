@@ -21,6 +21,8 @@ Installing this fork does **not** copy the public mempool from mempool.guide. Th
 
 The pinned fork stores the 328-character BLAKE2b header v2 representation in a widened database column. Upgrading from the initial package runs upstream schema migration 112 in place, preserving indexed blocks and allowing the backend to continue past the first header v2 block.
 
+The backend also backports Retropex's Bitcoin Knots 29.4.2 compatibility fix. It accepts `difficulty_blake2b` when Knots omits `difficulty` for header-v2 blocks and reads current difficulty from `getblockchaininfo` instead of the removed `getdifficulty` RPC.
+
 ---
 
 ## Table of Contents

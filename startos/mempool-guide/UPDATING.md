@@ -31,6 +31,12 @@ Carry across base-image, Node, Rust, build-command, entrypoint, and nginx patch
 changes. Also compare the fork's `backend/mempool-config.sample.json` with the
 schema in `startos/file-models/mempool-config.json.ts`.
 
+The backend build applies `patches/knots-difficulty-blake2b.patch`, a backport
+of Retropex commit `0971c2298a98f4471002442ea34d43add6ca6163`. It keeps block
+indexing and projected blocks working with Bitcoin Knots 29.4.2. Confirm the
+patch still applies after changing the source pin. Remove the patch when the
+pinned source already contains that commit.
+
 ## Update GeoIP assets
 
 MaxMind is disabled by the StartOS configuration, but the upstream backend

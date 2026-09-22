@@ -1,0 +1,51 @@
+diff --git a/backend/src/api/bitcoin/bitcoin-api.interface.ts b/backend/src/api/bitcoin/bitcoin-api.interface.ts
+index 3e364ff2a..31f2b97c1 100644
+--- a/backend/src/api/bitcoin/bitcoin-api.interface.ts
++++ b/backend/src/api/bitcoin/bitcoin-api.interface.ts
+@@ -48,7 +48,8 @@ export namespace IBitcoinApi {
+     mediantime: number;              //  (numeric) The median block time expressed in UNIX epoch time
+     nonce: number;                   //  (numeric) The nonce
+     bits: string;                    //  (string) The bits
+-    difficulty: number;              //  (numeric) The difficulty
++    difficulty?: number;             //  (numeric) The difficulty (SHA256d blocks only on Bitcoin Knots since the BLAKE2b change)
++    difficulty_blake2b?: number;     //  (numeric) Expected BLAKE2b hashes for the block (header-v2 blocks on Bitcoin Knots)
+     chainwork: string;               //  (string) Expected number of hashes required to produce the chain up to this block (in hex)
+     nTx: number;                     //  (numeric) The number of transactions in the block
+     previousblockhash: string;       //  (string) The hash of the previous block
+@@ -138,7 +139,8 @@ export namespace IBitcoinApi {
+     blocks: number;                  // (numeric) the current number of blocks processed in the server
+     headers: number;                 // (numeric) the current number of headers we have validated
+     bestblockhash: string,           // (string) the hash of the currently best block
+-    difficulty: number;              // (numeric) the current difficulty
++    difficulty?: number;             // (numeric) the current difficulty (SHA256d tip only on Bitcoin Knots since the BLAKE2b change)
++    difficulty_blake2b?: number;     // (numeric) expected BLAKE2b hashes for the tip block (header-v2 tip on Bitcoin Knots)
+     mediantime: number;              // (numeric) median time for the current best block
+     verificationprogress: number;    // (numeric) estimate of verification progress [0..1]
+     initialblockdownload: boolean;   // (bool) (debug information) estimate of whether this node is in Initial Block Download mode.
+diff --git a/backend/src/api/bitcoin/bitcoin-api.ts b/backend/src/api/bitcoin/bitcoin-api.ts
+index 882b00bf0..6597b3d55 100644
+--- a/backend/src/api/bitcoin/bitcoin-api.ts
++++ b/backend/src/api/bitcoin/bitcoin-api.ts
+@@ -25,7 +25,7 @@ class BitcoinApi implements AbstractBitcoinApi {
+       timestamp: block.time,
+       bits: parseInt(block.bits, 16),
+       nonce: block.nonce,
+-      difficulty: block.difficulty,
++      difficulty: block.difficulty ?? block.difficulty_blake2b ?? 0,
+       merkle_root: block.merkleroot,
+       tx_count: block.nTx,
+       size: block.size,
+diff --git a/backend/src/api/mining/mining-routes.ts b/backend/src/api/mining/mining-routes.ts
+index b8325a567..8f7ca4a88 100644
+--- a/backend/src/api/mining/mining-routes.ts
++++ b/backend/src/api/mining/mining-routes.ts
+@@ -184,7 +184,8 @@ class MiningRoutes {
+     let currentHashrate = 0, currentDifficulty = 0;
+     try {
+       currentHashrate = await bitcoinClient.getNetworkHashPs(1008);
+-      currentDifficulty = await bitcoinClient.getDifficulty();
++      const blockchainInfo = await bitcoinClient.getBlockchainInfo();
++      currentDifficulty = blockchainInfo.difficulty ?? blockchainInfo.difficulty_blake2b ?? 0;
+     } catch (e) {
+       logger.debug('Bitcoin Core is not available, using zeroed value for current hashrate and difficulty');
+     }

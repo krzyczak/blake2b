@@ -17,11 +17,14 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
       build-essential \
       nodejs=24.13.0-1nodesource1 \
+      patch \
       pkg-config \
       python3 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
+
+COPY patches/knots-difficulty-blake2b.patch /tmp/knots-difficulty-blake2b.patch
 
 RUN curl --fail --location --retry 3 \
       "https://github.com/Retropex/mempool/archive/${MEMPOOL_GUIDE_COMMIT}.tar.gz" \
@@ -31,6 +34,8 @@ RUN curl --fail --location --retry 3 \
     && tar --extract --gzip --file /tmp/mempool-guide.tar.gz \
       --strip-components=1 \
     && rm /tmp/mempool-guide.tar.gz \
+    && patch --strip=1 --input=/tmp/knots-difficulty-blake2b.patch \
+    && rm /tmp/knots-difficulty-blake2b.patch \
     && cp docker/backend/* backend/ \
     && mkdir -p backend/GeoIP \
     && curl --fail --location --retry 3 \
