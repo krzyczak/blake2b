@@ -1,7 +1,7 @@
 # Bitcoin Blake2b Lab
 
 This experimental package runs Bitcoin Knots
-`v29.4.1.knots20260508rc5`. Open **Actions → Select Network** to choose the
+`v29.5.1.knots20260508`. Open **Actions → Select Network** to choose the
 chain:
 
 - **Isolated dummy regtest** is the default and preserves the original lab.
@@ -16,7 +16,7 @@ chain:
   canonical public network to synchronize with.
 
 In dummy mode, **Actions → Set BLAKE2b Headline** changes the regtest-only
-activation headline. The default is `BIP110-LAB`. RC5 permits this override
+activation headline. The default is `BIP110-LAB`. Knots permits this override
 only with an explicit regtest activation height, so the action is hidden in
 testnet4, signet, and ordinary regtest.
 

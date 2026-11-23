@@ -9,7 +9,7 @@
 > upstream documentation is accurate and fully applicable — see the
 > Documentation section of `instructions.md` for links.
 
-[Bitcoin Knots](https://github.com/bitcoinknots/bitcoin) is a derivative of Bitcoin Core with a larger set of policy controls and a built-in wallet surface. **This private flavor follows the RDTS chain and switches it to BLAKE2b header-v2 proof of work at block 961,640.** It runs Knots `v29.4.2.knots20260508`, uses the release's hardcoded mainnet consensus headline and activation checkpoint, and retains the official `bitcoind` package ID so an existing Start9 node upgrades in place.
+[Bitcoin Knots](https://github.com/bitcoinknots/bitcoin) is a derivative of Bitcoin Core with a larger set of policy controls and a built-in wallet surface. **This private flavor follows the RDTS chain and switches it to BLAKE2b header-v2 proof of work at block 961,640.** It runs Knots `v29.5.1.knots20260508`, uses the release's hardcoded mainnet consensus headline and activation checkpoint, and retains the official `bitcoind` package ID so an existing Start9 node upgrades in place.
 
 - **Upstream repo:** <https://github.com/bitcoinknots/bitcoin>
 - **Wrapper base:** <https://github.com/Start9Labs/bitcoin-knots-startos/tree/29.x>
@@ -240,11 +240,11 @@ Knots' built-in wallet, surfaced as actions. All nine are grouped under **Wallet
 
 ### BLAKE2b Headline
 
-Knots 29.4.2 hardcodes the mainnet activation headline as `8-30 NYPost Deride And Conquer` and includes the activation-block checkpoint. `-blake2b_headline` is regtest-only, so the package removes the old RC4 setting during upgrade and does not pass it on the daemon command line. This headline is not the miner identity that pools may place in every coinbase.
+Knots 29.5.1 hardcodes the mainnet activation headline as `8-30 NYPost Deride And Conquer` and includes the activation-block checkpoint. `-blake2b_headline` is regtest-only, so the package removes the old RC4 setting during upgrade and does not pass it on the daemon command line. This headline is not the miner identity that pools may place in every coinbase.
 
 ### Temporary Long Coinbase Maturity
 
-Knots 29.4.2 enforces a temporary 6,480-block maturity for coinbase rewards created at or after height 973,440. The consensus rule is active from height 973,440 through 979,919; height 979,920 is the release height. The daemon also applies the release's long-maturity mempool policy. On first start after this upgrade, Knots revalidates the affected chain range and can reorganize away from blocks that spent a new coinbase too early.
+Knots retains the historical 6,480-block maturity rule for the earlier window starting at block 973,440. Each reward mined from block 979,919 until RDTS expires must mature for 25,920 blocks (about 180 days). Coverage ends when the parent block’s median time past reaches 1 September 2027 at 00:00 UTC. Rewards already covered still have to mature. On upgrade, Knots revalidates affected blocks and can reorganize a chain that spent a reward too early.
 
 ### Prioritize Transaction
 
@@ -327,8 +327,8 @@ Both volumes are copied wholesale — `sdk.Backups.ofVolumes('main', 'i2pd')`. T
 10. **This flavor follows the RDTS chain**, changes proof of work to BLAKE2b header v2 at 961,640, and has no replay protection against the Bitcoin Core chain.
 11. **`consensusrules` does not gate enforcement.** This build enforces RDTS whether or not the option is present; the option only records consent and silences an hourly warning.
 12. **`maxtipage` remains pinned to 14 days** for compatibility with the chain's pre-BLAKE2b stalled period.
-13. **The BLAKE2b mainnet headline is hardcoded by Knots 29.4.2.** The package removes RC4's obsolete `blake2b_headline` setting during upgrade because Knots accepts that override only on regtest with an explicit activation height.
-14. **Coinbase maturity is temporarily 6,480 blocks.** Knots 29.4.2 enforces this for rewards created at or after height 973,440 while the consensus deployment is active through height 979,919, and revalidates that range on upgrade.
+13. **The BLAKE2b mainnet headline is hardcoded by Knots 29.5.1.** The package removes RC4's obsolete `blake2b_headline` setting during upgrade because Knots accepts that override only on regtest with an explicit activation height.
+14. **Coinbase maturity depends on the block that earned the reward.** From block 979,919 until RDTS expiry, each new reward matures after 25,920 blocks.
 15. **Every Wallet action disappears when `disablewallet` is on**, and all of them require the service to be running.
 16. **The repo maintains one branch per flavor**, each published as the same `bitcoind` package. Release notes and pinned upstream versions differ between them.
 

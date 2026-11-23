@@ -1,10 +1,10 @@
 import { IMPOSSIBLE, VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '0.1.0:8',
+  version: '0.1.0:9',
   releaseNotes: {
     en_US:
-      'Update Bitcoin Knots to v29.4.1.knots20260508rc5, restrict the headline override to dummy regtest, and retain DATUM activation compatibility.',
+      'Update Bitcoin Knots to v29.5.1.knots20260508. This release also updates the testnet4 coinbase maturity schedule.',
   },
   migrations: {
     up: async () => {},

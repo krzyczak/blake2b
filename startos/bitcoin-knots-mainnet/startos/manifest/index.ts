@@ -16,9 +16,9 @@ export const manifest = setupManifest({
       source: {
         dockerBuild: {
           buildArgs: {
-            VERSION: '29.4.2.knots20260508',
+            VERSION: '29.5.1.knots20260508',
             RELEASE_BASE_URL:
-              'https://bitcoinknots.org/files/29.x/29.4.2.knots20260508',
+              'https://bitcoinknots.org/files/29.x/29.5.1.knots20260508',
           },
         },
       },

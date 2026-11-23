@@ -1,7 +1,7 @@
 FROM debian:bookworm-slim AS builder
 
-ARG BITCOIN_COMMIT=306523a567d5cf17d1939dc485be57a5ae83cfe7
-ARG BITCOIN_TARBALL_SHA256=887216b39ef40c2b3c003ae0b7fde625174258d9e517ec0fa49775aacb82179f
+ARG BITCOIN_COMMIT=b4c8f9f4aa5715c98d0d550fc1395c2cc7a416f1
+ARG BITCOIN_TARBALL_SHA256=1aa37d87d35657c88d96e2bf9c0a2e5adceb512e9d7938fa7db2a8582a9bda3f
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
@@ -26,8 +26,7 @@ RUN curl --fail --location --silent --show-error \
 
 # RC5 stopped exposing the activation headline through getblocktemplate.
 # The companion DATUM build still consumes that field for the dummy chain's
-# height-20 activation block, so restore only the RPC field. Consensus remains
-# RC5's implementation and parameters.
+# height-20 activation block, so restore only the RPC field.
 COPY patches/restore-blake2b-headline-gbt.patch /tmp/
 RUN patch --directory=/src --strip=1 \
         < /tmp/restore-blake2b-headline-gbt.patch \

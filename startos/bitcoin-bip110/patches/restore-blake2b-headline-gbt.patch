@@ -1,8 +1,8 @@
 diff --git a/src/rpc/mining.cpp b/src/rpc/mining.cpp
-index e4cefa3b30..24a3a6080c 100644
+index 8b7c7de9d4..b881fb572e 100644
 --- a/src/rpc/mining.cpp
 +++ b/src/rpc/mining.cpp
-@@ -991,6 +991,9 @@ static RPCHelpMan getblocktemplate()
+@@ -993,6 +993,9 @@ static UniValue TemplateToJSON(const Consensus::Params& consensusParams, const Ch
      }
 
      UniValue aux(UniValue::VOBJ);

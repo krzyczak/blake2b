@@ -81,7 +81,7 @@ rpcallowip=0.0.0.0/0
 rpcuser=datum
 rpcpassword=bip110-regtest-lab
 
-# RC5 accepts headline overrides only on regtest with an explicit BLAKE2b
+# Knots accepts headline overrides only on regtest with an explicit BLAKE2b
 # activation height, so only the dummy mode may set one.
 ${HEADLINE_CONFIG}
 ${MODE_CONFIG}

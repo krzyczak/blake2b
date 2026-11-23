@@ -1,8 +1,8 @@
 # Bitcoin Blake2b Lab for StartOS
 
 Experimental StartOS package pinned to Bitcoin Knots tag
-`v29.4.1.knots20260508rc5`, peeled commit
-`306523a567d5cf17d1939dc485be57a5ae83cfe7`, and a verified source-tarball
+`v29.5.1.knots20260508`, peeled commit
+`b4c8f9f4aa5715c98d0d550fc1395c2cc7a416f1`, and a verified source-tarball
 SHA-256.
 
 Use the **Select Network** action to choose one of four modes:
@@ -11,7 +11,7 @@ Use the **Select Network** action to choose one of four modes:
   `/data` datadir, creates 19 validated SHA256d regtest blocks, and leaves the
   BLAKE2b activation block at height 20 for the external miner. Its private
   headline remains `BIP110-LAB` for compatibility with existing dummy chains.
-- `testnet4` joins and validates the public testnet4 chain. RC5 activates
+- `testnet4` joins and validates the public testnet4 chain. Knots activates
   BLAKE2b at height 150308 and takes its public-network consensus parameters
   directly from the binary.
 - `signet` joins the public default signet. Its blocks additionally require an
@@ -25,7 +25,7 @@ retained block data, but do not fake validation state. Each non-dummy mode has
 its own datadir under `/data/networks`, so changing networks does not mix chain
 state.
 
-RC5 accepts `blake2b_headline` only on regtest with an explicit BLAKE2b
+Knots accepts `blake2b_headline` only on regtest with an explicit BLAKE2b
 activation height. The package therefore sets it only for the dummy chain at
 height 20. A narrow RPC compatibility patch exposes the selected headline in
 `getblocktemplate` at that activation block. The modified DATUM gateway inserts

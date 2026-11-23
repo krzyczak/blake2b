@@ -62,8 +62,8 @@ COPY assets/release-keys/ /tmp/release-keys/
 # assets/release-keys/ fails the build rather than voting in the quorum.
 #
 # gpg's exit code is unusable here: GnuPG 2.4+ returns non-zero for ERRSIG
-# (signatures by signers outside the keyring) even when the pinned-key
-# signatures verified fine.
+# (signatures by signers outside the keyring). Process every signature so an
+# unknown signer cannot hide a later pinned signature.
 RUN set -e; \
     export LC_ALL=C; \
     gpg --import /tmp/release-keys/*.asc; \
@@ -83,7 +83,7 @@ RUN set -e; \
     if ! diff -q /tmp/pinned-primaries /tmp/keyring-primaries >/dev/null; then \
         echo "KEYRING CONTAINS KEYS OUTSIDE THE PINNED SET"; exit 1; \
     fi; \
-    gpg --verify --status-fd 1 SHA256SUMS.asc SHA256SUMS 2>/dev/null > /tmp/gpg-status || true; \
+    gpg --proc-all-sigs --verify --status-fd 1 SHA256SUMS.asc SHA256SUMS 2>/dev/null > /tmp/gpg-status || true; \
     bad=$(grep -c '^\[GNUPG:\] BADSIG' /tmp/gpg-status || true); \
     signers=$(awk '/^\[GNUPG:\] NEWSIG/{g=0} /^\[GNUPG:\] GOODSIG/{g=1} /^\[GNUPG:\] VALIDSIG/{if(g)print $NF; g=0}' /tmp/gpg-status \
       | grep -Ex '[0-9A-F]{40}' | sort -u | comm -12 - /tmp/pinned-primaries | wc -l); \

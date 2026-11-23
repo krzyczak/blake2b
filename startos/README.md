@@ -2,10 +2,10 @@
 
 This directory contains four StartOS SDK 2.0 packages:
 
-- `bitcoin-bip110`: Bitcoin Blake2b Lab, using Bitcoin Knots RC4 with selectable dummy, testnet4,
+- `bitcoin-bip110`: Bitcoin Blake2b Lab, using Bitcoin Knots 29.5.1 with selectable dummy, testnet4,
   signet, and regtest modes.
 - `datum-bip110`: DATUM Blake2b Lab, using Maveth's matching BLAKE2b gateway.
-- `bitcoin-knots-mainnet`: Bitcoin Knots RC4 for the BIP-110/RDTS mainnet
+- `bitcoin-knots-mainnet`: Bitcoin Knots 29.5.1 for the BIP-110/RDTS mainnet
   chain, packaged as an in-place upgrade of Start9's `bitcoind` service.
 - `mempool-guide`: the x86_64 mempool.guide/Retropex explorer, packaged under
   a separate service id so it can coexist with Start9's official Mempool.
@@ -72,10 +72,8 @@ The packages regenerate these settings at every start:
 
 - Network: selected in the Bitcoin package action.
 - Dummy activation: BLAKE2b at height 20 with headline `BIP110-LAB`.
-- Public testnet4: RC4's built-in activation at height 150308 with real peer
-  synchronization. The package defaults its headline to `Totoro`; the node's
-  **Set BLAKE2b Headline** action can override this separately for each network
-  when the RC4 test announcement specifies a different exact value.
+- Public testnet4 activates BLAKE2b at height 150308 and synchronizes with
+  public peers. The headline override applies only to dummy regtest.
 - Bitcoin RPC: port 18443, bridge-only on StartOS.
 - Gateway Stratum: raw TCP port 23334 (StartOS may assign another external
   port if it is already occupied).
@@ -101,6 +99,6 @@ hash; update both values together when testing a newer protocol revision.
 
 `bitcoin-knots-mainnet` is separate from the lab pair. It keeps package ID
 `bitcoind`, so sideloading it upgrades the existing Start9 Bitcoin Knots node
-and reuses its `main` and `i2pd` volumes. It pins signed Knots RC4 binaries,
-activates BLAKE2b header v2 at block 961,640, and enforces
-`blake2b_headline=8-30 NYPost Deride And Conquer`.
+and reuses its `main` and `i2pd` volumes. It pins signed Knots 29.5.1 binaries,
+activates BLAKE2b header v2 at block 961,640, and uses the hardcoded activation
+headline `8-30 NYPost Deride And Conquer`.
